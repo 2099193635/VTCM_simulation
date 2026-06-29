@@ -1,0 +1,218 @@
+﻿manifest_name: ballast_condition_random_scan
+base_profile_dir: configs/standard
+output_root: configs/trials/ballast_condition_random_scan
+common:
+  main_script: generate_main.py
+  project_name: ballast_condition_random_scan
+  vehicle_type: 楂橀€熷杞?
+  irr_type: 闅忔満涓嶅钩椤?
+  random_seed: 20260627
+  defect_switch: 'off'
+  tz: 5.0
+  save_dof_mode: vehicle
+  save_spy_level: core
+  save_stride: 10
+  plot_figs: 'Off'
+  note_prefix: ballast_random
+  description: Ballast hardening and loosening scan under the same fixed random irregularity realization.
+
+cases:
+  - case_id: case_00_random_baseline
+    note: Fixed-seed random irregularity, no ballast condition defect.
+    updates: {}
+
+  - case_id: case_01_harden_etaK2_etaC1_count5
+    note: Hardened ballast, eta_k=2, eta_c=1, five consecutive sleepers.
+    updates: {}
+    structure_defects:
+      - type: ballast_condition
+        label: harden_etaK2_etaC1_count5
+        start_m: 200.0
+        count: 5
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 2.0
+        damping_factor_eta_c: 1.0
+
+  - case_id: case_02_harden_etaK5_etaC1_count5
+    note: Hardened ballast, eta_k=5, eta_c=1, five consecutive sleepers.
+    updates: {}
+    structure_defects:
+      - type: ballast_condition
+        label: harden_etaK5_etaC1_count5
+        start_m: 200.0
+        count: 5
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 5.0
+        damping_factor_eta_c: 1.0
+
+  - case_id: case_03_harden_etaK10_etaC1_count5
+    note: Hardened ballast, eta_k=10, eta_c=1, five consecutive sleepers.
+    updates: {}
+    structure_defects:
+      - type: ballast_condition
+        label: harden_etaK10_etaC1_count5
+        start_m: 200.0
+        count: 5
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 10.0
+        damping_factor_eta_c: 1.0
+
+  - case_id: case_04_loose_etaK0p5_etaC1_count5
+    note: Loose ballast, eta_k=0.5, eta_c=1, five consecutive sleepers.
+    updates: {}
+    structure_defects:
+      - type: ballast_condition
+        label: loose_etaK0p5_etaC1_count5
+        start_m: 200.0
+        count: 5
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 0.5
+        damping_factor_eta_c: 1.0
+
+  - case_id: case_05_loose_etaK0p2_etaC1_count5
+    note: Loose ballast, eta_k=0.2, eta_c=1, five consecutive sleepers.
+    updates: {}
+    structure_defects:
+      - type: ballast_condition
+        label: loose_etaK0p2_etaC1_count5
+        start_m: 200.0
+        count: 5
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 0.2
+        damping_factor_eta_c: 1.0
+
+  - case_id: case_06_loose_etaK0p1_etaC1_count5
+    note: Loose ballast, eta_k=0.1, eta_c=1, five consecutive sleepers.
+    updates: {}
+    structure_defects:
+      - type: ballast_condition
+        label: loose_etaK0p1_etaC1_count5
+        start_m: 200.0
+        count: 5
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 0.1
+        damping_factor_eta_c: 1.0
+
+  - case_id: case_07_harden_etaK5_etaC0p5_count5
+    note: Hardened ballast with lower damping, eta_k=5, eta_c=0.5.
+    updates: {}
+    structure_defects:
+      - type: ballast_condition
+        label: harden_etaK5_etaC0p5_count5
+        start_m: 200.0
+        count: 5
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 5.0
+        damping_factor_eta_c: 0.5
+
+  - case_id: case_08_harden_etaK5_etaC2_count5
+    note: Hardened ballast with higher damping, eta_k=5, eta_c=2.
+    updates: {}
+    structure_defects:
+      - type: ballast_condition
+        label: harden_etaK5_etaC2_count5
+        start_m: 200.0
+        count: 5
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 5.0
+        damping_factor_eta_c: 2.0
+
+  - case_id: case_09_harden_etaK5_etaC5_count5
+    note: Hardened ballast with high damping, eta_k=5, eta_c=5.
+    updates: {}
+    structure_defects:
+      - type: ballast_condition
+        label: harden_etaK5_etaC5_count5
+        start_m: 200.0
+        count: 5
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 5.0
+        damping_factor_eta_c: 5.0
+
+  - case_id: case_10_loose_etaK0p2_etaC0p5_count5
+    note: Loose ballast with lower damping, eta_k=0.2, eta_c=0.5.
+    updates: {}
+    structure_defects:
+      - type: ballast_condition
+        label: loose_etaK0p2_etaC0p5_count5
+        start_m: 200.0
+        count: 5
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 0.2
+        damping_factor_eta_c: 0.5
+
+  - case_id: case_11_loose_etaK0p2_etaC2_count5
+    note: Loose ballast with higher damping, eta_k=0.2, eta_c=2.
+    updates: {}
+    structure_defects:
+      - type: ballast_condition
+        label: loose_etaK0p2_etaC2_count5
+        start_m: 200.0
+        count: 5
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 0.2
+        damping_factor_eta_c: 2.0
+
+  - case_id: case_12_harden_etaK5_etaC1_count1
+    note: Hardened ballast, eta_k=5, eta_c=1, one sleeper.
+    updates: {}
+    structure_defects:
+      - type: ballast_condition
+        label: harden_etaK5_etaC1_count1
+        start_m: 200.0
+        count: 1
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 5.0
+        damping_factor_eta_c: 1.0
+
+  - case_id: case_13_harden_etaK5_etaC1_count10
+    note: Hardened ballast, eta_k=5, eta_c=1, ten consecutive sleepers.
+    updates: {}
+    structure_defects:
+      - type: ballast_condition
+        label: harden_etaK5_etaC1_count10
+        start_m: 200.0
+        count: 10
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 5.0
+        damping_factor_eta_c: 1.0
+
+  - case_id: case_14_loose_etaK0p2_etaC1_count1
+    note: Loose ballast, eta_k=0.2, eta_c=1, one sleeper.
+    updates: {}
+    structure_defects:
+      - type: ballast_condition
+        label: loose_etaK0p2_etaC1_count1
+        start_m: 200.0
+        count: 1
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 0.2
+        damping_factor_eta_c: 1.0
+
+  - case_id: case_15_loose_etaK0p2_etaC1_count10
+    note: Loose ballast, eta_k=0.2, eta_c=1, ten consecutive sleepers.
+    updates: {}
+    structure_defects:
+      - type: ballast_condition
+        label: loose_etaK0p2_etaC1_count10
+        start_m: 200.0
+        count: 10
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 0.2
+        damping_factor_eta_c: 1.0
+

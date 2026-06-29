@@ -1,0 +1,259 @@
+﻿manifest_name: sleeper_void_2mm_position_scan
+base_profile_dir: configs/standard
+output_root: configs/trials/sleeper_void_2mm_position_scan
+common:
+  main_script: generate_main.py
+  project_name: sleeper_void_2mm_position_scan
+  vehicle_type: 楂橀€熷杞?
+  save_dof_mode: vehicle
+  save_spy_level: core
+  save_stride: 10
+  plot_figs: 'Off'
+  note_prefix: void2mm
+  description: Non-closing 2 mm sleeper void cases, with and without measured irregularity.
+
+cases:
+  - case_id: case_01_noirr_no_void
+    note: No irregularity, no sleeper void.
+    case_args:
+      irr_type: 鏃犱笉骞抽『
+    updates: {}
+
+  - case_id: case_02_noirr_void_1_start_199p8m
+    note: No irregularity, one 2 mm sleeper void at 199.8 m.
+    case_args:
+      irr_type: 鏃犱笉骞抽『
+    updates: {}
+    structure_defects:
+      - type: sleeper_void
+        label: noirr_void_1_199p8m
+        start_m: 199.8
+        count: 1
+        side: both
+        delta_gap_m: 0.002
+
+  - case_id: case_03_noirr_void_2_start_199p8m
+    note: No irregularity, two consecutive 2 mm sleeper voids from 199.8 m.
+    case_args:
+      irr_type: 鏃犱笉骞抽『
+    updates: {}
+    structure_defects:
+      - type: sleeper_void
+        label: noirr_void_2_199p8m
+        start_m: 199.8
+        count: 2
+        side: both
+        delta_gap_m: 0.002
+
+  - case_id: case_04_noirr_void_3_start_199p8m
+    note: No irregularity, three consecutive 2 mm sleeper voids from 199.8 m.
+    case_args:
+      irr_type: 鏃犱笉骞抽『
+    updates: {}
+    structure_defects:
+      - type: sleeper_void
+        label: noirr_void_3_199p8m
+        start_m: 199.8
+        count: 3
+        side: both
+        delta_gap_m: 0.002
+
+  - case_id: case_05_irr_no_void
+    note: Measured irregularity, no sleeper void.
+    case_args:
+      irr_type: 澶栭儴瀵煎叆
+      irr_lead_time: 2.0
+    updates: {}
+
+  - case_id: case_06_irr_void_1_high_peak
+    note: Measured irregularity, one 2 mm void at vertical high peak, 303.6 m.
+    case_args:
+      irr_type: 澶栭儴瀵煎叆
+      irr_lead_time: 2.0
+    updates: {}
+    structure_defects:
+      - type: sleeper_void
+        label: irr_void_1_high_peak_303p6m
+        start_m: 303.6
+        count: 1
+        side: both
+        delta_gap_m: 0.002
+
+  - case_id: case_07_irr_void_1_low_trough
+    note: Measured irregularity, one 2 mm void at vertical low trough, 276.0 m.
+    case_args:
+      irr_type: 澶栭儴瀵煎叆
+      irr_lead_time: 2.0
+    updates: {}
+    structure_defects:
+      - type: sleeper_void
+        label: irr_void_1_low_trough_276p0m
+        start_m: 276.0
+        count: 1
+        side: both
+        delta_gap_m: 0.002
+
+  - case_id: case_08_irr_void_1_abs_peak
+    note: Measured irregularity, one 2 mm void at another large vertical amplitude point, 418.8 m.
+    case_args:
+      irr_type: 澶栭儴瀵煎叆
+      irr_lead_time: 2.0
+    updates: {}
+    structure_defects:
+      - type: sleeper_void
+        label: irr_void_1_abs_peak_418p8m
+        start_m: 418.8
+        count: 1
+        side: both
+        delta_gap_m: 0.002
+
+  - case_id: case_09_irr_void_1_max_gradient
+    note: Measured irregularity, one 2 mm void near maximum vertical gradient, 344.4 m.
+    case_args:
+      irr_type: 澶栭儴瀵煎叆
+      irr_lead_time: 2.0
+    updates: {}
+    structure_defects:
+      - type: sleeper_void
+        label: irr_void_1_max_gradient_344p4m
+        start_m: 344.4
+        count: 1
+        side: both
+        delta_gap_m: 0.002
+
+  - case_id: case_10_irr_void_1_near_flat
+    note: Measured irregularity, one 2 mm void at a near-flat reference point, 186.6 m.
+    case_args:
+      irr_type: 澶栭儴瀵煎叆
+      irr_lead_time: 2.0
+    updates: {}
+    structure_defects:
+      - type: sleeper_void
+        label: irr_void_1_near_flat_186p6m
+        start_m: 186.6
+        count: 1
+        side: both
+        delta_gap_m: 0.002
+
+  - case_id: case_11_irr_void_2_high_peak
+    note: Measured irregularity, two consecutive 2 mm voids from high peak, 303.6 m.
+    case_args: &irr_case_args
+      irr_type: 澶栭儴瀵煎叆
+      irr_lead_time: 2.0
+    updates: {}
+    structure_defects:
+      - type: sleeper_void
+        label: irr_void_2_high_peak_303p6m
+        start_m: 303.6
+        count: 2
+        side: both
+        delta_gap_m: 0.002
+
+  - case_id: case_12_irr_void_2_low_trough
+    note: Measured irregularity, two consecutive 2 mm voids from low trough, 276.0 m.
+    case_args: *irr_case_args
+    updates: {}
+    structure_defects:
+      - type: sleeper_void
+        label: irr_void_2_low_trough_276p0m
+        start_m: 276.0
+        count: 2
+        side: both
+        delta_gap_m: 0.002
+
+  - case_id: case_13_irr_void_2_abs_peak
+    note: Measured irregularity, two consecutive 2 mm voids from large amplitude point, 418.8 m.
+    case_args: *irr_case_args
+    updates: {}
+    structure_defects:
+      - type: sleeper_void
+        label: irr_void_2_abs_peak_418p8m
+        start_m: 418.8
+        count: 2
+        side: both
+        delta_gap_m: 0.002
+
+  - case_id: case_14_irr_void_2_max_gradient
+    note: Measured irregularity, two consecutive 2 mm voids from maximum gradient point, 344.4 m.
+    case_args: *irr_case_args
+    updates: {}
+    structure_defects:
+      - type: sleeper_void
+        label: irr_void_2_max_gradient_344p4m
+        start_m: 344.4
+        count: 2
+        side: both
+        delta_gap_m: 0.002
+
+  - case_id: case_15_irr_void_2_near_flat
+    note: Measured irregularity, two consecutive 2 mm voids from near-flat point, 186.6 m.
+    case_args: *irr_case_args
+    updates: {}
+    structure_defects:
+      - type: sleeper_void
+        label: irr_void_2_near_flat_186p6m
+        start_m: 186.6
+        count: 2
+        side: both
+        delta_gap_m: 0.002
+
+  - case_id: case_16_irr_void_3_high_peak
+    note: Measured irregularity, three consecutive 2 mm voids from high peak, 303.6 m.
+    case_args: *irr_case_args
+    updates: {}
+    structure_defects:
+      - type: sleeper_void
+        label: irr_void_3_high_peak_303p6m
+        start_m: 303.6
+        count: 3
+        side: both
+        delta_gap_m: 0.002
+
+  - case_id: case_17_irr_void_3_low_trough
+    note: Measured irregularity, three consecutive 2 mm voids from low trough, 276.0 m.
+    case_args: *irr_case_args
+    updates: {}
+    structure_defects:
+      - type: sleeper_void
+        label: irr_void_3_low_trough_276p0m
+        start_m: 276.0
+        count: 3
+        side: both
+        delta_gap_m: 0.002
+
+  - case_id: case_18_irr_void_3_abs_peak
+    note: Measured irregularity, three consecutive 2 mm voids from large amplitude point, 418.8 m.
+    case_args: *irr_case_args
+    updates: {}
+    structure_defects:
+      - type: sleeper_void
+        label: irr_void_3_abs_peak_418p8m
+        start_m: 418.8
+        count: 3
+        side: both
+        delta_gap_m: 0.002
+
+  - case_id: case_19_irr_void_3_max_gradient
+    note: Measured irregularity, three consecutive 2 mm voids from maximum gradient point, 344.4 m.
+    case_args: *irr_case_args
+    updates: {}
+    structure_defects:
+      - type: sleeper_void
+        label: irr_void_3_max_gradient_344p4m
+        start_m: 344.4
+        count: 3
+        side: both
+        delta_gap_m: 0.002
+
+  - case_id: case_20_irr_void_3_near_flat
+    note: Measured irregularity, three consecutive 2 mm voids from near-flat point, 186.6 m.
+    case_args: *irr_case_args
+    updates: {}
+    structure_defects:
+      - type: sleeper_void
+        label: irr_void_3_near_flat_186p6m
+        start_m: 186.6
+        count: 3
+        side: both
+        delta_gap_m: 0.002
+

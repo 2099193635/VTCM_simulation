@@ -1,0 +1,225 @@
+﻿manifest_name: high_speed_passenger_bogie_psd_round2_scan
+base_profile_dir: configs/standard
+output_root: configs/trials/high_speed_passenger_bogie_psd_round2_scan
+common:
+  main_script: generate_main.py
+  project_name: bogie_psd_round2_scan
+  vehicle_type: 楂橀€熷杞?
+  save_dof_mode: vehicle
+  irr_type: 澶栭儴瀵煎叆
+  plot_figs: 'Off'
+  vx_set: 215.0
+  tz: 5.0
+  note_prefix: bogie_psd_r2
+  description: >
+    Round-2 calibration scan for Bogie1 acceleration PSD. Secondary suspension
+    parameters are kept unchanged; the scan varies primary lateral/longitudinal/
+    vertical stiffness and damping, plus anti-roll stiffness.
+
+cases:
+  - case_id: case_01_baseline
+    note: baseline; secondary suspension unchanged
+    updates:
+      vehicle_params.yaml:
+        瀹㈣溅:
+          楂橀€熷杞?:
+            Kpx_base: 10000000.0
+            Kpy_base: 5000000.0
+            Kpz_base: 550000.0
+            Cpx_base: 0.0
+            Cpy_base: 0.0
+            Cpz_base: 6000.0
+            Krx: 2500000.0
+
+  - case_id: case_02_kpy_0p5
+    note: primary lateral stiffness 0.5x
+    updates:
+      vehicle_params.yaml:
+        瀹㈣溅:
+          楂橀€熷杞?:
+            Kpy_base: 2500000.0
+
+  - case_id: case_03_kpy_0p75
+    note: primary lateral stiffness 0.75x
+    updates:
+      vehicle_params.yaml:
+        瀹㈣溅:
+          楂橀€熷杞?:
+            Kpy_base: 3750000.0
+
+  - case_id: case_04_kpy_1p5
+    note: primary lateral stiffness 1.5x
+    updates:
+      vehicle_params.yaml:
+        瀹㈣溅:
+          楂橀€熷杞?:
+            Kpy_base: 7500000.0
+
+  - case_id: case_05_kpy_2p0
+    note: primary lateral stiffness 2.0x
+    updates:
+      vehicle_params.yaml:
+        瀹㈣溅:
+          楂橀€熷杞?:
+            Kpy_base: 10000000.0
+
+  - case_id: case_06_cpy_20k
+    note: add primary lateral damping 20 kNs/m
+    updates:
+      vehicle_params.yaml:
+        瀹㈣溅:
+          楂橀€熷杞?:
+            Cpy_base: 20000.0
+
+  - case_id: case_07_cpy_60k
+    note: add primary lateral damping 60 kNs/m
+    updates:
+      vehicle_params.yaml:
+        瀹㈣溅:
+          楂橀€熷杞?:
+            Cpy_base: 60000.0
+
+  - case_id: case_08_kpy_soft_cpy20k
+    note: primary lateral soft plus 20 kNs/m damping
+    updates:
+      vehicle_params.yaml:
+        瀹㈣溅:
+          楂橀€熷杞?:
+            Kpy_base: 2500000.0
+            Cpy_base: 20000.0
+
+  - case_id: case_09_kpy_stiff_cpy60k
+    note: primary lateral stiff plus 60 kNs/m damping
+    updates:
+      vehicle_params.yaml:
+        瀹㈣溅:
+          楂橀€熷杞?:
+            Kpy_base: 7500000.0
+            Cpy_base: 60000.0
+
+  - case_id: case_10_kpx_0p5
+    note: primary longitudinal stiffness 0.5x
+    updates:
+      vehicle_params.yaml:
+        瀹㈣溅:
+          楂橀€熷杞?:
+            Kpx_base: 5000000.0
+
+  - case_id: case_11_kpx_1p5
+    note: primary longitudinal stiffness 1.5x
+    updates:
+      vehicle_params.yaml:
+        瀹㈣溅:
+          楂橀€熷杞?:
+            Kpx_base: 15000000.0
+
+  - case_id: case_12_cpx_20k
+    note: add primary longitudinal damping 20 kNs/m
+    updates:
+      vehicle_params.yaml:
+        瀹㈣溅:
+          楂橀€熷杞?:
+            Cpx_base: 20000.0
+
+  - case_id: case_13_cpx_60k
+    note: add primary longitudinal damping 60 kNs/m
+    updates:
+      vehicle_params.yaml:
+        瀹㈣溅:
+          楂橀€熷杞?:
+            Cpx_base: 60000.0
+
+  - case_id: case_14_kpz_0p65
+    note: primary vertical stiffness 0.65x
+    updates:
+      vehicle_params.yaml:
+        瀹㈣溅:
+          楂橀€熷杞?:
+            Kpz_base: 357500.0
+
+  - case_id: case_15_kpz_1p55
+    note: primary vertical stiffness 1.55x
+    updates:
+      vehicle_params.yaml:
+        瀹㈣溅:
+          楂橀€熷杞?:
+            Kpz_base: 852500.0
+
+  - case_id: case_16_cpz_2k
+    note: primary vertical damping 2 kNs/m
+    updates:
+      vehicle_params.yaml:
+        瀹㈣溅:
+          楂橀€熷杞?:
+            Cpz_base: 2000.0
+
+  - case_id: case_17_cpz_20k
+    note: primary vertical damping 20 kNs/m
+    updates:
+      vehicle_params.yaml:
+        瀹㈣溅:
+          楂橀€熷杞?:
+            Cpz_base: 20000.0
+
+  - case_id: case_18_krx_0p5
+    note: anti-roll stiffness 0.5x
+    updates:
+      vehicle_params.yaml:
+        瀹㈣溅:
+          楂橀€熷杞?:
+            Krx: 1250000.0
+
+  - case_id: case_19_krx_2p0
+    note: anti-roll stiffness 2.0x
+    updates:
+      vehicle_params.yaml:
+        瀹㈣溅:
+          楂橀€熷杞?:
+            Krx: 5000000.0
+
+  - case_id: case_20_lat_soft_combo
+    note: softer lateral/longitudinal primary with moderate damping
+    updates:
+      vehicle_params.yaml:
+        瀹㈣溅:
+          楂橀€熷杞?:
+            Kpy_base: 3000000.0
+            Cpy_base: 20000.0
+            Kpx_base: 6000000.0
+            Cpx_base: 20000.0
+
+  - case_id: case_21_lat_stiff_damped_combo
+    note: stiffer lateral/longitudinal primary with higher damping
+    updates:
+      vehicle_params.yaml:
+        瀹㈣溅:
+          楂橀€熷杞?:
+            Kpy_base: 8000000.0
+            Cpy_base: 60000.0
+            Kpx_base: 14000000.0
+            Cpx_base: 60000.0
+
+  - case_id: case_22_vertical_tuned_combo
+    note: higher primary vertical stiffness/damping plus softer anti-roll
+    updates:
+      vehicle_params.yaml:
+        瀹㈣溅:
+          楂橀€熷杞?:
+            Kpz_base: 852500.0
+            Cpz_base: 20000.0
+            Krx: 1250000.0
+
+  - case_id: case_23_mixed_best_guess
+    note: combined lateral soft-damped and vertical stiff-damped guess
+    updates:
+      vehicle_params.yaml:
+        瀹㈣溅:
+          楂橀€熷杞?:
+            Kpy_base: 3000000.0
+            Cpy_base: 20000.0
+            Kpx_base: 6000000.0
+            Cpx_base: 20000.0
+            Kpz_base: 852500.0
+            Cpz_base: 20000.0
+            Krx: 1250000.0
+

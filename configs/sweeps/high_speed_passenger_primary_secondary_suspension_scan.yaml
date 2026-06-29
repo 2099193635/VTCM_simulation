@@ -1,0 +1,136 @@
+﻿manifest_name: high_speed_passenger_primary_secondary_suspension_scan
+base_profile_dir: configs/standard
+output_root: configs/trials/high_speed_passenger_primary_secondary_suspension_scan
+common:
+  main_script: generate_main.py
+  project_name: primary_secondary_suspension_scan
+  vehicle_type: 楂橀€熷杞?
+  save_dof_mode: vehicle
+  irr_type: 澶栭儴瀵煎叆
+  plot_figs: 'Off'
+  vx_set: 215.0
+  tz: 5.0
+  note_prefix: pri_sec_susp
+  description: >
+    Joint scan of primary and secondary suspension stiffness/damping for the
+    high-speed passenger car. Primary vertical Kpz/Cpz and secondary lateral/
+    vertical Ksy/Ksz/Csy/Csz are varied around the standard profile.
+
+cases:
+  - case_id: case_01_baseline
+    note: baseline, Kpz=0.55e6, Cpz=6e3, Ksy=0.15e6, Ksz=0.40e6, Csy=60e3, Csz=80e3
+    updates:
+      vehicle_params.yaml:
+        瀹㈣溅:
+          楂橀€熷杞?:
+            Kpz_base: 550000.0
+            Cpz_base: 6000.0
+            Ksy_base: 150000.0
+            Ksz_base: 400000.0
+            Csy_base: 60000.0
+            Csz_base: 80000.0
+
+  - case_id: case_02_primary_soft
+    note: primary soft, Kpz=0.44e6, Cpz=4.8e3, secondary baseline
+    updates:
+      vehicle_params.yaml:
+        瀹㈣溅:
+          楂橀€熷杞?:
+            Kpz_base: 440000.0
+            Cpz_base: 4800.0
+            Ksy_base: 150000.0
+            Ksz_base: 400000.0
+            Csy_base: 60000.0
+            Csz_base: 80000.0
+
+  - case_id: case_03_primary_stiff
+    note: primary stiff, Kpz=0.66e6, Cpz=7.2e3, secondary baseline
+    updates:
+      vehicle_params.yaml:
+        瀹㈣溅:
+          楂橀€熷杞?:
+            Kpz_base: 660000.0
+            Cpz_base: 7200.0
+            Ksy_base: 150000.0
+            Ksz_base: 400000.0
+            Csy_base: 60000.0
+            Csz_base: 80000.0
+
+  - case_id: case_04_secondary_soft
+    note: secondary soft, primary baseline, Ksy=0.12e6, Ksz=0.32e6, Csy=48e3, Csz=64e3
+    updates:
+      vehicle_params.yaml:
+        瀹㈣溅:
+          楂橀€熷杞?:
+            Kpz_base: 550000.0
+            Cpz_base: 6000.0
+            Ksy_base: 120000.0
+            Ksz_base: 320000.0
+            Csy_base: 48000.0
+            Csz_base: 64000.0
+
+  - case_id: case_05_secondary_stiff
+    note: secondary stiff, primary baseline, Ksy=0.18e6, Ksz=0.48e6, Csy=72e3, Csz=96e3
+    updates:
+      vehicle_params.yaml:
+        瀹㈣溅:
+          楂橀€熷杞?:
+            Kpz_base: 550000.0
+            Cpz_base: 6000.0
+            Ksy_base: 180000.0
+            Ksz_base: 480000.0
+            Csy_base: 72000.0
+            Csz_base: 96000.0
+
+  - case_id: case_06_all_soft
+    note: primary and secondary soft
+    updates:
+      vehicle_params.yaml:
+        瀹㈣溅:
+          楂橀€熷杞?:
+            Kpz_base: 440000.0
+            Cpz_base: 4800.0
+            Ksy_base: 120000.0
+            Ksz_base: 320000.0
+            Csy_base: 48000.0
+            Csz_base: 64000.0
+
+  - case_id: case_07_all_stiff
+    note: primary and secondary stiff
+    updates:
+      vehicle_params.yaml:
+        瀹㈣溅:
+          楂橀€熷杞?:
+            Kpz_base: 660000.0
+            Cpz_base: 7200.0
+            Ksy_base: 180000.0
+            Ksz_base: 480000.0
+            Csy_base: 72000.0
+            Csz_base: 96000.0
+
+  - case_id: case_08_primary_soft_secondary_stiff
+    note: primary soft, secondary stiff
+    updates:
+      vehicle_params.yaml:
+        瀹㈣溅:
+          楂橀€熷杞?:
+            Kpz_base: 440000.0
+            Cpz_base: 4800.0
+            Ksy_base: 180000.0
+            Ksz_base: 480000.0
+            Csy_base: 72000.0
+            Csz_base: 96000.0
+
+  - case_id: case_09_primary_stiff_secondary_soft
+    note: primary stiff, secondary soft
+    updates:
+      vehicle_params.yaml:
+        瀹㈣溅:
+          楂橀€熷杞?:
+            Kpz_base: 660000.0
+            Cpz_base: 7200.0
+            Ksy_base: 120000.0
+            Ksz_base: 320000.0
+            Csy_base: 48000.0
+            Csz_base: 64000.0
+

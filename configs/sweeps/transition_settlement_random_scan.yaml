@@ -1,0 +1,101 @@
+﻿manifest_name: transition_settlement_random_scan
+base_profile_dir: configs/standard
+output_root: configs/trials/transition_settlement_random_scan
+common:
+  main_script: generate_main.py
+  project_name: transition_settlement_random_scan
+  irr_type: 闅忔満涓嶅钩椤?
+  random_seed: 20260626
+  defect_switch: 'off'
+  tz: 5.0
+  save_dof_mode: vehicle
+  output_tier: normal
+  plot_figs: 'Off'
+  note_prefix: settlement_random
+  description: Transition-zone settlement scan superimposed on the same random track irregularity realization.
+
+cases:
+  - case_id: case_00_random_baseline
+    note: Random irregularity only, no settlement.
+    updates: {}
+
+  - case_id: case_01_random_cosine_05mm
+    note: Random irregularity plus 20 m cosine settlement, 5 mm amplitude.
+    updates: {}
+    transition_settlements:
+      - type: cosine
+        label: random_cosine_20m_05mm
+        start_m: 80.0
+        length_m: 20.0
+        amplitude_mm: 5.0
+
+  - case_id: case_02_random_cosine_15mm
+    note: Random irregularity plus 20 m cosine settlement, 15 mm amplitude.
+    updates: {}
+    transition_settlements:
+      - type: cosine
+        label: random_cosine_20m_15mm
+        start_m: 80.0
+        length_m: 20.0
+        amplitude_mm: 15.0
+
+  - case_id: case_03_random_cosine_25mm
+    note: Random irregularity plus 20 m cosine settlement, 25 mm amplitude.
+    updates: {}
+    transition_settlements:
+      - type: cosine
+        label: random_cosine_20m_25mm
+        start_m: 80.0
+        length_m: 20.0
+        amplitude_mm: 25.0
+
+  - case_id: case_04_random_cosine_35mm
+    note: Random irregularity plus 20 m cosine settlement, 35 mm amplitude.
+    updates: {}
+    transition_settlements:
+      - type: cosine
+        label: random_cosine_20m_35mm
+        start_m: 80.0
+        length_m: 20.0
+        amplitude_mm: 35.0
+
+  - case_id: case_05_random_kink_0p25permille
+    note: Random irregularity plus 20 m kink settlement, 0.25 permille angle.
+    updates: {}
+    transition_settlements:
+      - type: kink
+        label: random_kink_20m_0p25permille
+        start_m: 80.0
+        length_m: 20.0
+        angle_permille: 0.25
+
+  - case_id: case_06_random_kink_0p50permille
+    note: Random irregularity plus 20 m kink settlement, 0.50 permille angle.
+    updates: {}
+    transition_settlements:
+      - type: kink
+        label: random_kink_20m_0p50permille
+        start_m: 80.0
+        length_m: 20.0
+        angle_permille: 0.50
+
+  - case_id: case_07_random_kink_0p75permille
+    note: Random irregularity plus 20 m kink settlement, 0.75 permille angle.
+    updates: {}
+    transition_settlements:
+      - type: kink
+        label: random_kink_20m_0p75permille
+        start_m: 80.0
+        length_m: 20.0
+        angle_permille: 0.75
+
+  - case_id: case_08_random_kink_1p00permille
+    note: Random irregularity plus 20 m kink settlement, 1.00 permille angle.
+    updates: {}
+    transition_settlements:
+      - type: kink
+        label: random_kink_20m_1p00permille
+        start_m: 80.0
+        length_m: 20.0
+        angle_permille: 1.00
+

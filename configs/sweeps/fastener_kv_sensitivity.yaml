@@ -1,0 +1,54 @@
+﻿manifest_name: fastener_kv_sensitivity
+base_profile_dir: configs/standard
+output_root: configs/trials/fastener_kv_sensitivity
+common:
+  project_name: 扣件垂向刚度敏感性分析
+  vehicle_type: 高速客车
+  save_dof_mode: vehicle
+  irr_type: 外部导入
+  plot_figs: 'Off'
+  note_prefix: kkjv_scan
+  description: 扣件垂向刚度Kkjv参数扫描（20~60kN/mm），分析刚度对轮轨力、车体加速度、轨枕应力的影响
+
+cases:
+  - case_id: kp_020
+    note: Kkjv=20kN/mm，高速软扣件下限
+    updates:
+      fastener_kv.yaml:
+        Standard_KV:
+          Kkjv: 20000000.0
+
+  - case_id: kp_025
+    note: Kkjv=25kN/mm，高速软扣件上限
+    updates:
+      fastener_kv.yaml:
+        Standard_KV:
+          Kkjv: 25000000.0
+
+  - case_id: kp_030
+    note: Kkjv=30kN/mm，历史基准值（优化前）
+    updates:
+      fastener_kv.yaml:
+        Standard_KV:
+          Kkjv: 30000000.0
+
+  - case_id: kp_040
+    note: Kkjv=40kN/mm，重载过渡值
+    updates:
+      fastener_kv.yaml:
+        Standard_KV:
+          Kkjv: 40000000.0
+
+  - case_id: kp_050
+    note: Kkjv=50kN/mm，重载典型值
+    updates:
+      fastener_kv.yaml:
+        Standard_KV:
+          Kkjv: 50000000.0
+
+  - case_id: kp_060
+    note: Kkjv=60kN/mm，重载上限（当前默认值）
+    updates:
+      fastener_kv.yaml:
+        Standard_KV:
+          Kkjv: 60000000.0

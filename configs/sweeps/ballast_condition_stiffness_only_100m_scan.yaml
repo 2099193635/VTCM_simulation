@@ -1,0 +1,189 @@
+﻿manifest_name: ballast_condition_stiffness_only_100m_scan
+base_profile_dir: configs/standard
+output_root: configs/trials/ballast_condition_stiffness_only_100m_scan
+common:
+  main_script: generate_main.py
+  project_name: ballast_condition_stiffness_only_100m_scan
+  vehicle_type: 楂橀€熷杞?
+  irr_type: 闅忔満涓嶅钩椤?
+  random_seed: 20260627
+  vx_set: 215.0
+  defect_switch: 'off'
+  tz: 10.0
+  save_dof_mode: vehicle
+  save_spy_level: core
+  save_stride: 10
+  plot_figs: 'Off'
+  output_tier: normal
+  save_format: npz_raw
+  note_prefix: ballast_konly100m
+  description: 100 m ballast-condition scan with stiffness multiplier eta_k varied and damping multiplier eta_c fixed at 1.0.
+
+cases:
+  - case_id: case_00_seed20260627_baseline_v215
+    note: Fixed-seed random irregularity, no ballast condition defect, speed=215 km/h.
+    updates: {}
+
+  - case_id: case_01_seed20260627_eta0p1_count167_v215
+    note: Stiffness-only loose ballast, eta_k=0.1, eta_c=1.0, 167 consecutive sleepers, speed=215 km/h.
+    updates: {}
+    structure_defects:
+      - type: ballast_condition
+        label: stiffness_only_eta0p1_count167
+        start_m: 200.0
+        count: 167
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 0.1
+        damping_factor_eta_c: 1.0
+
+  - case_id: case_02_seed20260627_eta0p2_count167_v215
+    note: Stiffness-only loose ballast, eta_k=0.2, eta_c=1.0, 167 consecutive sleepers, speed=215 km/h.
+    updates: {}
+    structure_defects:
+      - type: ballast_condition
+        label: stiffness_only_eta0p2_count167
+        start_m: 200.0
+        count: 167
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 0.2
+        damping_factor_eta_c: 1.0
+
+  - case_id: case_03_seed20260627_eta0p5_count167_v215
+    note: Stiffness-only loose ballast, eta_k=0.5, eta_c=1.0, 167 consecutive sleepers, speed=215 km/h.
+    updates: {}
+    structure_defects:
+      - type: ballast_condition
+        label: stiffness_only_eta0p5_count167
+        start_m: 200.0
+        count: 167
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 0.5
+        damping_factor_eta_c: 1.0
+
+  - case_id: case_04_seed20260627_eta1_count167_v215
+    note: Neutral stiffness-control window, eta_k=1.0, eta_c=1.0, 167 consecutive sleepers, speed=215 km/h.
+    updates: {}
+    structure_defects:
+      - type: ballast_condition
+        label: stiffness_only_eta1_count167
+        start_m: 200.0
+        count: 167
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 1.0
+        damping_factor_eta_c: 1.0
+
+  - case_id: case_05_seed20260627_eta2_count167_v215
+    note: Stiffness-only hardened ballast, eta_k=2.0, eta_c=1.0, 167 consecutive sleepers, speed=215 km/h.
+    updates: {}
+    structure_defects:
+      - type: ballast_condition
+        label: stiffness_only_eta2_count167
+        start_m: 200.0
+        count: 167
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 2.0
+        damping_factor_eta_c: 1.0
+
+  - case_id: case_06_seed20260627_eta5_count167_v215
+    note: Stiffness-only hardened ballast, eta_k=5.0, eta_c=1.0, 167 consecutive sleepers, speed=215 km/h.
+    updates: {}
+    structure_defects:
+      - type: ballast_condition
+        label: stiffness_only_eta5_count167
+        start_m: 200.0
+        count: 167
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 5.0
+        damping_factor_eta_c: 1.0
+
+  - case_id: case_07_seed20260627_eta10_count167_v215
+    note: Stiffness-only hardened ballast, eta_k=10.0, eta_c=1.0, 167 consecutive sleepers, speed=215 km/h.
+    updates: {}
+    structure_defects:
+      - type: ballast_condition
+        label: stiffness_only_eta10_count167
+        start_m: 200.0
+        count: 167
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 10.0
+        damping_factor_eta_c: 1.0
+
+  - case_id: case_08_seed20260627_baseline_v160
+    note: Speed-control baseline, no ballast condition defect, speed=160 km/h.
+    case_args:
+      vx_set: 160.0
+    updates: {}
+
+  - case_id: case_09_seed20260627_eta0p2_count167_v160
+    note: Stiffness-only loose ballast, eta_k=0.2, eta_c=1.0, 167 consecutive sleepers, speed=160 km/h.
+    case_args:
+      vx_set: 160.0
+    updates: {}
+    structure_defects:
+      - type: ballast_condition
+        label: stiffness_only_eta0p2_count167_v160
+        start_m: 200.0
+        count: 167
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 0.2
+        damping_factor_eta_c: 1.0
+
+  - case_id: case_10_seed20260627_eta5_count167_v160
+    note: Stiffness-only hardened ballast, eta_k=5.0, eta_c=1.0, 167 consecutive sleepers, speed=160 km/h.
+    case_args:
+      vx_set: 160.0
+    updates: {}
+    structure_defects:
+      - type: ballast_condition
+        label: stiffness_only_eta5_count167_v160
+        start_m: 200.0
+        count: 167
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 5.0
+        damping_factor_eta_c: 1.0
+
+  - case_id: case_11_seed20260627_baseline_v250
+    note: Speed-control baseline, no ballast condition defect, speed=250 km/h.
+    case_args:
+      vx_set: 250.0
+    updates: {}
+
+  - case_id: case_12_seed20260627_eta0p2_count167_v250
+    note: Stiffness-only loose ballast, eta_k=0.2, eta_c=1.0, 167 consecutive sleepers, speed=250 km/h.
+    case_args:
+      vx_set: 250.0
+    updates: {}
+    structure_defects:
+      - type: ballast_condition
+        label: stiffness_only_eta0p2_count167_v250
+        start_m: 200.0
+        count: 167
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 0.2
+        damping_factor_eta_c: 1.0
+
+  - case_id: case_13_seed20260627_eta5_count167_v250
+    note: Stiffness-only hardened ballast, eta_k=5.0, eta_c=1.0, 167 consecutive sleepers, speed=250 km/h.
+    case_args:
+      vx_set: 250.0
+    updates: {}
+    structure_defects:
+      - type: ballast_condition
+        label: stiffness_only_eta5_count167_v250
+        start_m: 200.0
+        count: 167
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 5.0
+        damping_factor_eta_c: 1.0
+

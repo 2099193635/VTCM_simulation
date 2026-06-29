@@ -1,0 +1,439 @@
+﻿manifest_name: ballast_condition_sync_eta_100m_scan
+base_profile_dir: configs/standard
+output_root: configs/trials/ballast_condition_sync_eta_100m_scan
+common:
+  main_script: generate_main.py
+  project_name: ballast_condition_sync_eta_100m_scan
+  vehicle_type: 楂橀€熷杞?
+  irr_type: 闅忔満涓嶅钩椤?
+  random_seed: 20260627
+  vx_set: 215.0
+  defect_switch: 'off'
+  tz: 10.0
+  save_dof_mode: vehicle
+  save_spy_level: core
+  save_stride: 10
+  plot_figs: 'Off'
+  note_prefix: ballast_sync100m
+  description: 100 m ballast-condition scan with synchronized stiffness and damping multipliers under the same fixed random irregularity realization.
+
+cases:
+  - case_id: case_00_random_baseline
+    note: Fixed-seed random irregularity, no ballast condition defect.
+    updates: {}
+
+  - case_id: case_01_eta0p1_count167
+    note: Synchronized ballast softening, eta_k=eta_c=0.1, 167 consecutive sleepers.
+    updates: {}
+    structure_defects:
+      - type: ballast_condition
+        label: sync_eta0p1_count167
+        start_m: 200.0
+        count: 167
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 0.1
+        damping_factor_eta_c: 0.1
+
+  - case_id: case_02_eta0p2_count167
+    note: Synchronized ballast softening, eta_k=eta_c=0.2, 167 consecutive sleepers.
+    updates: {}
+    structure_defects:
+      - type: ballast_condition
+        label: sync_eta0p2_count167
+        start_m: 200.0
+        count: 167
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 0.2
+        damping_factor_eta_c: 0.2
+
+  - case_id: case_03_eta0p5_count167
+    note: Synchronized ballast softening, eta_k=eta_c=0.5, 167 consecutive sleepers.
+    updates: {}
+    structure_defects:
+      - type: ballast_condition
+        label: sync_eta0p5_count167
+        start_m: 200.0
+        count: 167
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 0.5
+        damping_factor_eta_c: 0.5
+
+  - case_id: case_04_eta1_count167
+    note: Neutral ballast-condition window, eta_k=eta_c=1.0, 167 consecutive sleepers.
+    updates: {}
+    structure_defects:
+      - type: ballast_condition
+        label: sync_eta1_count167
+        start_m: 200.0
+        count: 167
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 1.0
+        damping_factor_eta_c: 1.0
+
+  - case_id: case_05_eta2_count167
+    note: Synchronized ballast hardening, eta_k=eta_c=2.0, 167 consecutive sleepers.
+    updates: {}
+    structure_defects:
+      - type: ballast_condition
+        label: sync_eta2_count167
+        start_m: 200.0
+        count: 167
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 2.0
+        damping_factor_eta_c: 2.0
+
+  - case_id: case_06_eta5_count167
+    note: Synchronized ballast hardening, eta_k=eta_c=5.0, 167 consecutive sleepers.
+    updates: {}
+    structure_defects:
+      - type: ballast_condition
+        label: sync_eta5_count167
+        start_m: 200.0
+        count: 167
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 5.0
+        damping_factor_eta_c: 5.0
+
+  - case_id: case_07_eta10_count167
+    note: Synchronized ballast hardening, eta_k=eta_c=10.0, 167 consecutive sleepers.
+    updates: {}
+    structure_defects:
+      - type: ballast_condition
+        label: sync_eta10_count167
+        start_m: 200.0
+        count: 167
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 10.0
+        damping_factor_eta_c: 10.0
+
+  - case_id: case_08_loose_eta0p1_v160_w0p9_count167
+    note: Strong loose ballast, eta_k=eta_c=0.1, speed=160 km/h, carbody mass factor=0.9.
+    case_args:
+      vx_set: 160.0
+    updates:
+      vehicle_params.yaml:
+        瀹㈣溅:
+          楂橀€熷杞?:
+            Mc_base: 30600.0
+            Jcx_base: 67554.0
+            Jcy_base: 2049300.0
+            Jcz_base: 1877400.0
+    structure_defects:
+      - type: ballast_condition
+        label: loose_eta0p1_v160_w0p9_count167
+        start_m: 200.0
+        count: 167
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 0.1
+        damping_factor_eta_c: 0.1
+
+  - case_id: case_09_loose_eta0p1_v160_w1p0_count167
+    note: Strong loose ballast, eta_k=eta_c=0.1, speed=160 km/h, nominal carbody mass.
+    case_args:
+      vx_set: 160.0
+    updates: {}
+    structure_defects:
+      - type: ballast_condition
+        label: loose_eta0p1_v160_w1p0_count167
+        start_m: 200.0
+        count: 167
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 0.1
+        damping_factor_eta_c: 0.1
+
+  - case_id: case_10_loose_eta0p1_v160_w1p1_count167
+    note: Strong loose ballast, eta_k=eta_c=0.1, speed=160 km/h, carbody mass factor=1.1.
+    case_args:
+      vx_set: 160.0
+    updates:
+      vehicle_params.yaml:
+        瀹㈣溅:
+          楂橀€熷杞?:
+            Mc_base: 37400.0
+            Jcx_base: 82566.0
+            Jcy_base: 2504700.0
+            Jcz_base: 2294600.0
+    structure_defects:
+      - type: ballast_condition
+        label: loose_eta0p1_v160_w1p1_count167
+        start_m: 200.0
+        count: 167
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 0.1
+        damping_factor_eta_c: 0.1
+
+  - case_id: case_11_loose_eta0p1_v215_w0p9_count167
+    note: Strong loose ballast, eta_k=eta_c=0.1, speed=215 km/h, carbody mass factor=0.9.
+    case_args:
+      vx_set: 215.0
+    updates:
+      vehicle_params.yaml:
+        瀹㈣溅:
+          楂橀€熷杞?:
+            Mc_base: 30600.0
+            Jcx_base: 67554.0
+            Jcy_base: 2049300.0
+            Jcz_base: 1877400.0
+    structure_defects:
+      - type: ballast_condition
+        label: loose_eta0p1_v215_w0p9_count167
+        start_m: 200.0
+        count: 167
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 0.1
+        damping_factor_eta_c: 0.1
+
+  - case_id: case_12_loose_eta0p1_v215_w1p1_count167
+    note: Strong loose ballast, eta_k=eta_c=0.1, speed=215 km/h, carbody mass factor=1.1.
+    case_args:
+      vx_set: 215.0
+    updates:
+      vehicle_params.yaml:
+        瀹㈣溅:
+          楂橀€熷杞?:
+            Mc_base: 37400.0
+            Jcx_base: 82566.0
+            Jcy_base: 2504700.0
+            Jcz_base: 2294600.0
+    structure_defects:
+      - type: ballast_condition
+        label: loose_eta0p1_v215_w1p1_count167
+        start_m: 200.0
+        count: 167
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 0.1
+        damping_factor_eta_c: 0.1
+
+  - case_id: case_13_loose_eta0p1_v250_w0p9_count167
+    note: Strong loose ballast, eta_k=eta_c=0.1, speed=250 km/h, carbody mass factor=0.9.
+    case_args:
+      vx_set: 250.0
+    updates:
+      vehicle_params.yaml:
+        瀹㈣溅:
+          楂橀€熷杞?:
+            Mc_base: 30600.0
+            Jcx_base: 67554.0
+            Jcy_base: 2049300.0
+            Jcz_base: 1877400.0
+    structure_defects:
+      - type: ballast_condition
+        label: loose_eta0p1_v250_w0p9_count167
+        start_m: 200.0
+        count: 167
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 0.1
+        damping_factor_eta_c: 0.1
+
+  - case_id: case_14_loose_eta0p1_v250_w1p0_count167
+    note: Strong loose ballast, eta_k=eta_c=0.1, speed=250 km/h, nominal carbody mass.
+    case_args:
+      vx_set: 250.0
+    updates: {}
+    structure_defects:
+      - type: ballast_condition
+        label: loose_eta0p1_v250_w1p0_count167
+        start_m: 200.0
+        count: 167
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 0.1
+        damping_factor_eta_c: 0.1
+
+  - case_id: case_15_loose_eta0p1_v250_w1p1_count167
+    note: Strong loose ballast, eta_k=eta_c=0.1, speed=250 km/h, carbody mass factor=1.1.
+    case_args:
+      vx_set: 250.0
+    updates:
+      vehicle_params.yaml:
+        瀹㈣溅:
+          楂橀€熷杞?:
+            Mc_base: 37400.0
+            Jcx_base: 82566.0
+            Jcy_base: 2504700.0
+            Jcz_base: 2294600.0
+    structure_defects:
+      - type: ballast_condition
+        label: loose_eta0p1_v250_w1p1_count167
+        start_m: 200.0
+        count: 167
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 0.1
+        damping_factor_eta_c: 0.1
+
+  - case_id: case_16_harden_eta5_v160_w0p9_count167
+    note: Hardened ballast, eta_k=eta_c=5.0, speed=160 km/h, carbody mass factor=0.9.
+    case_args:
+      vx_set: 160.0
+    updates:
+      vehicle_params.yaml:
+        瀹㈣溅:
+          楂橀€熷杞?:
+            Mc_base: 30600.0
+            Jcx_base: 67554.0
+            Jcy_base: 2049300.0
+            Jcz_base: 1877400.0
+    structure_defects:
+      - type: ballast_condition
+        label: harden_eta5_v160_w0p9_count167
+        start_m: 200.0
+        count: 167
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 5.0
+        damping_factor_eta_c: 5.0
+
+  - case_id: case_17_harden_eta5_v160_w1p0_count167
+    note: Hardened ballast, eta_k=eta_c=5.0, speed=160 km/h, nominal carbody mass.
+    case_args:
+      vx_set: 160.0
+    updates: {}
+    structure_defects:
+      - type: ballast_condition
+        label: harden_eta5_v160_w1p0_count167
+        start_m: 200.0
+        count: 167
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 5.0
+        damping_factor_eta_c: 5.0
+
+  - case_id: case_18_harden_eta5_v160_w1p1_count167
+    note: Hardened ballast, eta_k=eta_c=5.0, speed=160 km/h, carbody mass factor=1.1.
+    case_args:
+      vx_set: 160.0
+    updates:
+      vehicle_params.yaml:
+        瀹㈣溅:
+          楂橀€熷杞?:
+            Mc_base: 37400.0
+            Jcx_base: 82566.0
+            Jcy_base: 2504700.0
+            Jcz_base: 2294600.0
+    structure_defects:
+      - type: ballast_condition
+        label: harden_eta5_v160_w1p1_count167
+        start_m: 200.0
+        count: 167
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 5.0
+        damping_factor_eta_c: 5.0
+
+  - case_id: case_19_harden_eta5_v215_w0p9_count167
+    note: Hardened ballast, eta_k=eta_c=5.0, speed=215 km/h, carbody mass factor=0.9.
+    case_args:
+      vx_set: 215.0
+    updates:
+      vehicle_params.yaml:
+        瀹㈣溅:
+          楂橀€熷杞?:
+            Mc_base: 30600.0
+            Jcx_base: 67554.0
+            Jcy_base: 2049300.0
+            Jcz_base: 1877400.0
+    structure_defects:
+      - type: ballast_condition
+        label: harden_eta5_v215_w0p9_count167
+        start_m: 200.0
+        count: 167
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 5.0
+        damping_factor_eta_c: 5.0
+
+  - case_id: case_20_harden_eta5_v215_w1p1_count167
+    note: Hardened ballast, eta_k=eta_c=5.0, speed=215 km/h, carbody mass factor=1.1.
+    case_args:
+      vx_set: 215.0
+    updates:
+      vehicle_params.yaml:
+        瀹㈣溅:
+          楂橀€熷杞?:
+            Mc_base: 37400.0
+            Jcx_base: 82566.0
+            Jcy_base: 2504700.0
+            Jcz_base: 2294600.0
+    structure_defects:
+      - type: ballast_condition
+        label: harden_eta5_v215_w1p1_count167
+        start_m: 200.0
+        count: 167
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 5.0
+        damping_factor_eta_c: 5.0
+
+  - case_id: case_21_harden_eta5_v250_w0p9_count167
+    note: Hardened ballast, eta_k=eta_c=5.0, speed=250 km/h, carbody mass factor=0.9.
+    case_args:
+      vx_set: 250.0
+    updates:
+      vehicle_params.yaml:
+        瀹㈣溅:
+          楂橀€熷杞?:
+            Mc_base: 30600.0
+            Jcx_base: 67554.0
+            Jcy_base: 2049300.0
+            Jcz_base: 1877400.0
+    structure_defects:
+      - type: ballast_condition
+        label: harden_eta5_v250_w0p9_count167
+        start_m: 200.0
+        count: 167
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 5.0
+        damping_factor_eta_c: 5.0
+
+  - case_id: case_22_harden_eta5_v250_w1p0_count167
+    note: Hardened ballast, eta_k=eta_c=5.0, speed=250 km/h, nominal carbody mass.
+    case_args:
+      vx_set: 250.0
+    updates: {}
+    structure_defects:
+      - type: ballast_condition
+        label: harden_eta5_v250_w1p0_count167
+        start_m: 200.0
+        count: 167
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 5.0
+        damping_factor_eta_c: 5.0
+
+  - case_id: case_23_harden_eta5_v250_w1p1_count167
+    note: Hardened ballast, eta_k=eta_c=5.0, speed=250 km/h, carbody mass factor=1.1.
+    case_args:
+      vx_set: 250.0
+    updates:
+      vehicle_params.yaml:
+        瀹㈣溅:
+          楂橀€熷杞?:
+            Mc_base: 37400.0
+            Jcx_base: 82566.0
+            Jcy_base: 2504700.0
+            Jcz_base: 2294600.0
+    structure_defects:
+      - type: ballast_condition
+        label: harden_eta5_v250_w1p1_count167
+        start_m: 200.0
+        count: 167
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 5.0
+        damping_factor_eta_c: 5.0
+

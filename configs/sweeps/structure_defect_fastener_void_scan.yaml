@@ -1,0 +1,111 @@
+﻿manifest_name: structure_defect_fastener_void_scan
+base_profile_dir: configs/standard
+output_root: configs/trials/structure_defect_fastener_void_scan
+common:
+  main_script: generate_main.py
+  project_name: structure_defect_fastener_void_scan
+  vehicle_type: 楂橀€熷杞?
+  save_dof_mode: vehicle
+  save_spy_level: core
+  save_stride: 10
+  irr_type: 澶栭儴瀵煎叆
+  plot_figs: 'Off'
+  note_prefix: structure_defect
+  description: Local fastener failure and sleeper void scan using generate_main.py.
+
+cases:
+  - case_id: baseline
+    note: No local structure defect.
+    updates: {}
+
+  - case_id: fastener_fail_1
+    note: One failed fastener node, both rails, vertical and lateral.
+    updates: {}
+    structure_defects:
+      - type: fastener_failure
+        label: fastener_fail_1
+        start_m: 200.0
+        count: 1
+        side: both
+        directions: both
+        stiffness_factor: 0.0
+        damping_factor: 0.0
+
+  - case_id: fastener_fail_3
+    note: Three consecutive failed fastener nodes.
+    updates: {}
+    structure_defects:
+      - type: fastener_failure
+        label: fastener_fail_3
+        start_m: 200.0
+        count: 3
+        side: both
+        directions: both
+        stiffness_factor: 0.0
+        damping_factor: 0.0
+
+  - case_id: fastener_fail_5
+    note: Five consecutive failed fastener nodes.
+    updates: {}
+    structure_defects:
+      - type: fastener_failure
+        label: fastener_fail_5
+        start_m: 200.0
+        count: 5
+        side: both
+        directions: both
+        stiffness_factor: 0.0
+        damping_factor: 0.0
+
+  - case_id: sleeper_void_1mm
+    note: One sleeper void with 1 mm gap.
+    updates: {}
+    structure_defects:
+      - type: sleeper_void
+        label: sleeper_void_1mm
+        start_m: 200.0
+        count: 1
+        side: both
+        delta_gap_m: 0.001
+
+  - case_id: sleeper_void_2mm
+    note: One sleeper void with 2 mm gap.
+    updates: {}
+    structure_defects:
+      - type: sleeper_void
+        label: sleeper_void_2mm
+        start_m: 200.0
+        count: 1
+        side: both
+        delta_gap_m: 0.002
+
+  - case_id: sleeper_void_5mm
+    note: One sleeper void with 5 mm gap.
+    updates: {}
+    structure_defects:
+      - type: sleeper_void
+        label: sleeper_void_5mm
+        start_m: 200.0
+        count: 1
+        side: both
+        delta_gap_m: 0.005
+
+  - case_id: fastener_fail_3_void_2mm
+    note: Three failed fasteners combined with a 2 mm sleeper void.
+    updates: {}
+    structure_defects:
+      - type: fastener_failure
+        label: fastener_fail_3_combo
+        start_m: 200.0
+        count: 3
+        side: both
+        directions: both
+        stiffness_factor: 0.0
+        damping_factor: 0.0
+      - type: sleeper_void
+        label: sleeper_void_2mm_combo
+        start_m: 200.0
+        count: 3
+        side: both
+        delta_gap_m: 0.002
+

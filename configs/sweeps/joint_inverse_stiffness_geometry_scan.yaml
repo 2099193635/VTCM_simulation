@@ -1,0 +1,143 @@
+﻿manifest_name: joint_inverse_stiffness_geometry_scan
+base_profile_dir: configs/standard
+output_root: configs/trials/joint_inverse_stiffness_geometry_scan
+common:
+  main_script: generate_main.py
+  project_name: joint_inverse_stiffness_geometry_scan
+  vehicle_type: 楂橀€熷杞?
+  irr_type: 闅忔満涓嶅钩椤?
+  defect_switch: 'off'
+  tz: 10.0
+  save_dof_mode: vehicle
+  save_spy_level: core
+  save_stride: 10
+  plot_figs: 'Off'
+  note_prefix: joint_inverse
+  description: Counterfactual simulation matrix for joint inversion of geometry irregularity and ballast stiffness irregularity. Damping is fixed at eta_c=1.0.
+
+cases:
+  - case_id: case_00_seed20260627_baseline
+    note: Geometry seed 20260627, no stiffness irregularity.
+    case_args:
+      random_seed: 20260627
+    updates: {}
+
+  - case_id: case_01_seed20260627_loose_eta0p2_100m
+    note: Same geometry as case_00, soft stiffness irregularity eta_k=0.2 over about 100 m.
+    case_args:
+      random_seed: 20260627
+    updates: {}
+    structure_defects:
+      - type: ballast_condition
+        label: loose_eta0p2_100m
+        start_m: 200.0
+        count: 167
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 0.2
+        damping_factor_eta_c: 1.0
+
+  - case_id: case_02_seed20260627_harden_eta5_100m
+    note: Same geometry as case_00, hardened stiffness irregularity eta_k=5.0 over about 100 m.
+    case_args:
+      random_seed: 20260627
+    updates: {}
+    structure_defects:
+      - type: ballast_condition
+        label: harden_eta5_100m
+        start_m: 200.0
+        count: 167
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 5.0
+        damping_factor_eta_c: 1.0
+
+  - case_id: case_03_seed20260628_baseline
+    note: Different geometry seed, no stiffness irregularity.
+    case_args:
+      random_seed: 20260628
+    updates: {}
+
+  - case_id: case_04_seed20260628_loose_eta0p2_100m
+    note: Same stiffness as case_01, different geometry seed.
+    case_args:
+      random_seed: 20260628
+    updates: {}
+    structure_defects:
+      - type: ballast_condition
+        label: loose_eta0p2_100m
+        start_m: 200.0
+        count: 167
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 0.2
+        damping_factor_eta_c: 1.0
+
+  - case_id: case_05_seed20260629_loose_eta0p2_100m
+    note: Same stiffness as case_01, third geometry seed.
+    case_args:
+      random_seed: 20260629
+    updates: {}
+    structure_defects:
+      - type: ballast_condition
+        label: loose_eta0p2_100m
+        start_m: 200.0
+        count: 167
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 0.2
+        damping_factor_eta_c: 1.0
+
+  - case_id: case_06_seed20260630_short_loose_eta0p5
+    note: Short local soft stiffness irregularity.
+    case_args:
+      random_seed: 20260630
+    updates: {}
+    structure_defects:
+      - type: ballast_condition
+        label: short_loose_eta0p5
+        start_m: 220.0
+        count: 10
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 0.5
+        damping_factor_eta_c: 1.0
+
+  - case_id: case_07_seed20260631_short_harden_eta2
+    note: Short local hardened stiffness irregularity.
+    case_args:
+      random_seed: 20260631
+    updates: {}
+    structure_defects:
+      - type: ballast_condition
+        label: short_harden_eta2
+        start_m: 220.0
+        count: 10
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 2.0
+        damping_factor_eta_c: 1.0
+
+  - case_id: case_08_seed20260632_multi_eta0p5_eta5
+    note: Two stiffness irregularity zones in one run.
+    case_args:
+      random_seed: 20260632
+    updates: {}
+    structure_defects:
+      - type: ballast_condition
+        label: multi_loose_eta0p5
+        start_m: 180.0
+        count: 50
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 0.5
+        damping_factor_eta_c: 1.0
+      - type: ballast_condition
+        label: multi_harden_eta5
+        start_m: 300.0
+        count: 50
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 5.0
+        damping_factor_eta_c: 1.0
+
