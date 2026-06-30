@@ -10,7 +10,8 @@ import pandas as pd
 
 
 G = 9.80665
-DEFAULT_ROOT = Path("results/ballast_condition_random_scan")
+PROJECT_ROOT = Path(__file__).resolve().parent
+DEFAULT_ROOT = PROJECT_ROOT / "results" / "ballast_condition_random_scan"
 DEFAULT_OUT = DEFAULT_ROOT / "_comparison" / "publication_ballast_condition_random"
 
 
@@ -78,6 +79,30 @@ def find_case(df: pd.DataFrame, case_id: str) -> pd.Series:
     if hit.empty:
         raise ValueError(f"Case not found: {case_id}")
     return hit.iloc[0]
+
+
+def relocate_result_npz_paths(summary: pd.DataFrame, result_root: Path) -> pd.DataFrame:
+    df = summary.copy()
+    root = result_root.resolve()
+
+    def relocate(npz_path: str | Path) -> str:
+        path = Path(npz_path)
+        if path.exists():
+            return str(path)
+        parts = path.parts
+        if root.name in parts:
+            idx = parts.index(root.name)
+            candidate = root.joinpath(*parts[idx + 1 :])
+            if candidate.exists():
+                return str(candidate)
+        return str(path)
+
+    df["result_npz"] = df["result_npz"].map(relocate)
+    missing = [path for path in df["result_npz"].map(Path) if not path.exists()]
+    if missing:
+        preview = "\n".join(str(path) for path in missing[:3])
+        raise FileNotFoundError(f"Missing simulation_result.npz files after path relocation:\n{preview}")
+    return df
 
 
 def selected_cases(df: pd.DataFrame) -> list[str]:
@@ -283,6 +308,7 @@ def make_figure(result_root: Path, out_dir: Path) -> Path:
     comparison = result_root / "_comparison"
     analysis = pd.read_csv(comparison / "ballast_condition_group_analysis.csv")
     summary = pd.read_csv(comparison / "sweep_response_summary.csv")
+    summary = relocate_result_npz_paths(summary, result_root)
     analysis = analysis.merge(summary[["case_id", "result_npz", "note"]], on="case_id", how="left")
     analysis["label"] = analysis.apply(build_label, axis=1)
 

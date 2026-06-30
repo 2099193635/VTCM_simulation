@@ -13,8 +13,9 @@ import yaml
 
 G = 9.80665
 BASE_MC = 34000.0
-DEFAULT_ROOT = Path("results/ballast_condition_sync_eta_100m_scan")
-DEFAULT_MANIFEST = Path("configs/sweeps/ballast_condition_sync_eta_100m_scan.yaml")
+PROJECT_ROOT = Path(__file__).resolve().parent
+DEFAULT_ROOT = PROJECT_ROOT / "results" / "ballast_condition_sync_eta_100m_scan"
+DEFAULT_MANIFEST = PROJECT_ROOT / "configs" / "sweeps" / "ballast_condition_sync_eta_100m_scan.yaml"
 DEFAULT_OUT = DEFAULT_ROOT / "_comparison" / "publication_sync_eta_100m"
 
 
@@ -124,6 +125,30 @@ def enrich_summary(summary: pd.DataFrame, meta: pd.DataFrame) -> pd.DataFrame:
         values = pd.to_numeric(df[col], errors="coerce").to_numpy()
         finite &= np.isfinite(values)
     df["stable"] = finite & (df["carbody_az_rms_g"] < 1.0) & (df["wheelrail_fz_axle1_sum_peak_kn"] < 1.0e5)
+    return df
+
+
+def relocate_result_npz_paths(summary: pd.DataFrame, result_root: Path) -> pd.DataFrame:
+    df = summary.copy()
+    root = result_root.resolve()
+
+    def relocate(npz_path: str | Path) -> str:
+        path = Path(npz_path)
+        if path.exists():
+            return str(path)
+        parts = path.parts
+        if root.name in parts:
+            idx = parts.index(root.name)
+            candidate = root.joinpath(*parts[idx + 1 :])
+            if candidate.exists():
+                return str(candidate)
+        return str(path)
+
+    df["result_npz"] = df["result_npz"].map(relocate)
+    missing = [path for path in df["result_npz"].map(Path) if not path.exists()]
+    if missing:
+        preview = "\n".join(str(path) for path in missing[:3])
+        raise FileNotFoundError(f"Missing simulation_result.npz files after path relocation:\n{preview}")
     return df
 
 
@@ -698,6 +723,7 @@ def make_figure(result_root: Path, manifest_path: Path, out_dir: Path) -> Path:
     manifest = load_manifest(manifest_path)
     meta = case_metadata(manifest)
     summary = pd.read_csv(result_root / "_comparison" / "sweep_response_summary.csv")
+    summary = relocate_result_npz_paths(summary, result_root)
     df = enrich_summary(summary, meta)
 
     fig = plt.figure(figsize=(7.25, 9.65))
