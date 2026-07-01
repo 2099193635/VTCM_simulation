@@ -20,6 +20,7 @@ Copyright (c) 2026 by ${git_name_email}, All Rights Reserved.
 from configs.parameters import *
 from defect_injector.irregularity import Irregularity
 from defect_injector.settlement_profiles import load_settlement_config
+from defect_injector.geometry_defects import load_geometry_defect_config
 import numpy as np
 import argparse
 from configs.topology import SystemTopology
@@ -210,6 +211,8 @@ def parse_arguments():
                         ],
                         help='外部不平顺文件路径，格式: KEY=VALUE，支持 VL/VR/LL/LR 四个通道')
     parser.add_argument('--settlement_switch', type=str, default='Off', choices=['On', 'Off'], help='是否叠加过渡段沉降')
+    parser.add_argument('--geometry_defect_switch', type=str, default='Off', choices=['On', 'Off'], help='enable geometry defects only for spectrum-generated irregularity')
+    parser.add_argument('--geometry_defect_config', type=str, default='', help='geometry defect config path; YAML, JSON, and CSV are supported')
     parser.add_argument('--settlement_config', type=str, default='', help='过渡段沉降 YAML 配置文件路径')
     parser.add_argument('--random_seed', type=int, default=-1, help='随机不平顺种子；小于0表示不固定')
 
@@ -451,6 +454,15 @@ def main(args):
             raise ValueError('settlement_switch=On requires --settlement_config')
         settlement_specs = load_settlement_config(settlement_config)
         print(f" -> [过渡段沉降] 已加载 {len(settlement_specs)} 个沉降曲线: {settlement_config}")
+    if _str_to_bool(getattr(args, 'geometry_defect_switch', 'Off')):
+        geometry_defect_config = str(getattr(args, 'geometry_defect_config', '')).strip()
+        if not geometry_defect_config:
+            raise ValueError('geometry_defect_switch=On requires --geometry_defect_config')
+        geometry_defect_specs = load_geometry_defect_config(geometry_defect_config)
+        if args.irr_type == '外部导入':
+            print(' -> [geometry defects] external irregularity import keeps the input profile unchanged; geometry defects are archived only.')
+        else:
+            print(f" -> [geometry defects] loaded {len(geometry_defect_specs)} geometry defect records: {geometry_defect_config}")
     if int(getattr(args, 'random_seed', -1)) >= 0:
         np.random.seed(int(args.random_seed))
         print(f" -> [随机不平顺] 已固定随机种子: {int(args.random_seed)}")
@@ -472,7 +484,8 @@ def main(args):
         external_start_mileage = args.start_mileage,   # 外部里程起点（绝对/相对里程均可，单位由 external_distance_unit 控制）
         input_path = args.input_path,       # 不平顺输入路径
         output_path = args.output_path,     # 不平顺输出路径
-        settlement_specs = settlement_specs
+        settlement_specs = settlement_specs,
+        geometry_defect_specs = geometry_defect_specs
     )
     # 将 KEY=VALUE 列表解析为字典，并自动注入 start_mileage
     _external_files_dict = {}
@@ -569,6 +582,33 @@ def main(args):
             spy_data['Settlement_distance_rel_m'] = spy_data['Irre_distance_m']
         spy_data['Settlement_metadata_json'] = np.array(json.dumps(settlement_metadata, ensure_ascii=False))
         spy_data['Settlement_enabled'] = np.array(bool(settlement_metadata))
+
+        geometry_profile = getattr(track_simulator, 'geometry_defect_profile_full', None)
+        geometry_distance = getattr(track_simulator, 'geometry_defect_distance_rel_m', None)
+        geometry_metadata = getattr(track_simulator, 'geometry_defect_metadata', [])
+        if geometry_profile is not None:
+            _geo_len = len(np.asarray(geometry_profile.get('VL', [])))
+            _geo_idx = np.clip(_irr_idx, 0, max(_geo_len - 1, 0))
+            for _key in ('VL', 'VR', 'LL', 'LR'):
+                _arr = np.asarray(geometry_profile.get(_key, np.zeros(_geo_len)), dtype=float)
+                if _arr.size:
+                    spy_data[f'Geometry_defect_{_key}_m'] = _arr[_geo_idx].astype(np.float32)
+                    spy_data[f'Geometry_defect_{_key}_mm'] = (_arr[_geo_idx] * 1000.0).astype(np.float32)
+                else:
+                    spy_data[f'Geometry_defect_{_key}_m'] = np.zeros_like(_irr_idx, dtype=np.float32)
+                    spy_data[f'Geometry_defect_{_key}_mm'] = np.zeros_like(_irr_idx, dtype=np.float32)
+        else:
+            for _key in ('VL', 'VR', 'LL', 'LR'):
+                spy_data[f'Geometry_defect_{_key}_m'] = np.zeros_like(_irr_idx, dtype=np.float32)
+                spy_data[f'Geometry_defect_{_key}_mm'] = np.zeros_like(_irr_idx, dtype=np.float32)
+        if geometry_distance is not None:
+            geometry_distance = np.asarray(geometry_distance, dtype=float)
+            _dist_idx = np.clip(_irr_idx, 0, max(geometry_distance.size - 1, 0))
+            spy_data['Geometry_defect_distance_rel_m'] = geometry_distance[_dist_idx].astype(np.float64)
+        else:
+            spy_data['Geometry_defect_distance_rel_m'] = spy_data['Irre_distance_m']
+        spy_data['Geometry_defect_metadata_json'] = np.array(json.dumps(geometry_metadata, ensure_ascii=False))
+        spy_data['Geometry_defect_enabled'] = np.array(bool(geometry_metadata))
     except Exception as e:
         print(f" -> [警告] 不平顺附加数据写入失败: {e}")
 
@@ -688,6 +728,10 @@ def main(args):
             _cfg_ext = os.path.splitext(args.structure_defect_config)[1] or '.txt'
             defect_config_archive = os.path.join(files_dir, f'structure_defect_config{_cfg_ext}')
             shutil.copy2(args.structure_defect_config, defect_config_archive)
+        if args.geometry_defect_config and os.path.exists(args.geometry_defect_config):
+            _geo_ext = os.path.splitext(args.geometry_defect_config)[1] or '.txt'
+            geometry_config_archive = os.path.join(files_dir, f'geometry_defect_config{_geo_ext}')
+            shutil.copy2(args.geometry_defect_config, geometry_config_archive)
         print(f" -> [结构缺陷] 缺陷摘要已保存至: {defect_summary_file}")
     except Exception as e:
         print(f" -> [警告] 结构缺陷归档失败: {e}")
@@ -761,6 +805,10 @@ def main(args):
             f.write(f"structure_defect_record_count: {int(_structure_defect_summary.get('record_count', 0))}\n")
             f.write(f"structure_defect_summary: {defect_summary_file}\n")
             f.write(f"structure_defect_config_archive: {defect_config_archive}\n")
+            f.write(f"geometry_defect_switch: {args.geometry_defect_switch}\n")
+            f.write(f"geometry_defect_config: {args.geometry_defect_config}\n")
+            f.write(f"geometry_defect_record_count: {len(geometry_defect_specs)}\n")
+            f.write(f"geometry_defect_config_archive: {geometry_config_archive}\n")
             f.write(f"modal_truncation: {args.modal_truncation}\n")
             f.write(f"modal_cutoff_hz: {float(args.modal_cutoff_hz):.6f}\n")
             f.write(f"rail_modal_counts: [{mode_params.NV}, {mode_params.NL}, {mode_params.NT}]\n")

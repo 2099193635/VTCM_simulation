@@ -164,5 +164,44 @@ class StructureDefectTests(unittest.TestCase):
             self.assertTrue(np.any(dataset['stiffness_irregularity'] < 1.0))
 
 
+    def test_subgrade_condition_maps_to_kfv_cfv_only(self):
+        ip = SimpleNamespace(S0_mileage=1000.0, Nsub=2, Lkj=0.5, Cord_fastener=np.array([0.0, 0.5, 1.0]))
+        records = StructureDefectManager._parse_records([
+            {
+                'type': 'subgrade_void',
+                'start_m': 0.5,
+                'count': 1,
+                'side': 'left',
+                'eta_k': 0.25,
+                'eta_c': 0.5,
+            }
+        ], ip)
+        manager = StructureDefectManager(ip, {}, records, enabled=True)
+
+        defects = manager.get_step_defects(0)
+
+        np.testing.assert_allclose(defects['subgrade_kv_factor_L'], [1.0, 0.25, 1.0])
+        np.testing.assert_allclose(defects['subgrade_cv_factor_L'], [1.0, 0.5, 1.0])
+        np.testing.assert_allclose(defects['ballast_kv_factor_L'], [1.0, 1.0, 1.0])
+        np.testing.assert_allclose(defects['fastener_kv_factor_L'], [1.0, 1.0, 1.0])
+        self.assertTrue(defects['subgrade_active_L'][1])
+
+    def test_subgrade_condition_changes_foundation_force_only(self):
+        sub = self.make_substructure()
+        ss = self.make_state(n=1)
+        ss['XSubgrade_L'][0] = 2.0
+        ss['VSubgrade_L'][0] = 4.0
+        defects = {
+            'subgrade_kv_factor_L': np.array([0.5]),
+            'subgrade_cv_factor_L': np.array([0.25]),
+        }
+
+        baseline = sub.compute_subrail_forces(ss, ss, defects={})
+        weakened = sub.compute_subrail_forces(ss, ss, defects=defects)
+
+        self.assertAlmostEqual(baseline['FLbf'][0], 7.2)
+        self.assertAlmostEqual(weakened['FLbf'][0], 3.3)
+        self.assertAlmostEqual(baseline['FLsV'][0], weakened['FLsV'][0])
+
 if __name__ == '__main__':
     unittest.main()

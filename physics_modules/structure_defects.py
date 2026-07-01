@@ -117,13 +117,25 @@ class StructureDefectManager:
                 "松散",
             ):
                 kind = "ballast_condition"
+            elif kind in (
+                "subgrade_condition",
+                "subgrade_void",
+                "subgrade_stiffness",
+                "subgrade_support",
+                "subgrade_cavity",
+                "foundation_void",
+                "roadbed_void",
+                "璺熀绌烘礊",
+                "璺熀鏀壙寮卞寲",
+            ):
+                kind = "subgrade_condition"
 
             abs_start_m = StructureDefectManager._resolve_abs_start_m(raw, base_abs_m)
             count = max(1, int(float(raw.get("count", raw.get("node_count", 1)))))
             side = _norm_text(raw.get("side", "both"), "both")
             directions = _norm_text(raw.get("directions", raw.get("direction", "both")), "both")
 
-            default_factor = 1.0 if kind == "ballast_condition" else 0.0
+            default_factor = 1.0 if kind in ("ballast_condition", "subgrade_condition") else 0.0
             stiffness_factor = float(raw.get(
                 "stiffness_factor_eta_k",
                 raw.get("eta_k", raw.get("stiffness_factor", raw.get("k_factor", default_factor))),
@@ -193,12 +205,18 @@ class StructureDefectManager:
             "ballast_cv_factor_L": ones.copy(),
             "ballast_kv_factor_R": ones.copy(),
             "ballast_cv_factor_R": ones.copy(),
+            "subgrade_kv_factor_L": ones.copy(),
+            "subgrade_cv_factor_L": ones.copy(),
+            "subgrade_kv_factor_R": ones.copy(),
+            "subgrade_cv_factor_R": ones.copy(),
             "fastener_active_L": np.zeros(self.n_nodes, dtype=bool),
             "fastener_active_R": np.zeros(self.n_nodes, dtype=bool),
             "void_active_L": np.zeros(self.n_nodes, dtype=bool),
             "void_active_R": np.zeros(self.n_nodes, dtype=bool),
             "ballast_active_L": np.zeros(self.n_nodes, dtype=bool),
             "ballast_active_R": np.zeros(self.n_nodes, dtype=bool),
+            "subgrade_active_L": np.zeros(self.n_nodes, dtype=bool),
+            "subgrade_active_R": np.zeros(self.n_nodes, dtype=bool),
         }
         if not self.is_active():
             return out
@@ -253,6 +271,15 @@ class StructureDefectManager:
                     out["ballast_active_R"][sl] = True
                     out["ballast_kv_factor_R"][sl] *= record.stiffness_factor
                     out["ballast_cv_factor_R"][sl] *= record.damping_factor
+            elif record.kind == "subgrade_condition":
+                if left and vertical:
+                    out["subgrade_active_L"][sl] = True
+                    out["subgrade_kv_factor_L"][sl] *= record.stiffness_factor
+                    out["subgrade_cv_factor_L"][sl] *= record.damping_factor
+                if right and vertical:
+                    out["subgrade_active_R"][sl] = True
+                    out["subgrade_kv_factor_R"][sl] *= record.stiffness_factor
+                    out["subgrade_cv_factor_R"][sl] *= record.damping_factor
 
         return out
 

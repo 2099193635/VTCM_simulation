@@ -17,6 +17,7 @@ if hasattr(sys.stderr, 'reconfigure'):
     sys.stderr.reconfigure(encoding='utf-8', errors='replace')
 
 INTERNAL_COMMON_KEYS = {'note_prefix', 'description', 'main_script'}
+GEOMETRY_DEFECT_FILE = 'geometry_defects.yaml'
 SETTLEMENT_FILE = 'transition_settlements.yaml'
 
 
@@ -131,6 +132,12 @@ def build_case_command(
         command.extend([
             '--structure_defect_switch', 'On',
             '--structure_defect_config', str(structure_defect_config),
+        ])
+    geometry_defect_config = profile_dir / GEOMETRY_DEFECT_FILE
+    if geometry_defect_config.exists():
+        command.extend([
+            '--geometry_defect_switch', 'On',
+            '--geometry_defect_config', str(geometry_defect_config),
         ])
     settlement_config = profile_dir / SETTLEMENT_FILE
     if settlement_config.exists():

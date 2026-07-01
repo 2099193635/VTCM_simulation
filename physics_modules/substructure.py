@@ -75,6 +75,10 @@ class SubstructureDynamics:
         Cbv_L = Cbv * np.asarray(defects.get('ballast_cv_factor_L', one), dtype=float)
         Kbv_R = Kbv * np.asarray(defects.get('ballast_kv_factor_R', one), dtype=float)
         Cbv_R = Cbv * np.asarray(defects.get('ballast_cv_factor_R', one), dtype=float)
+        Kfv_L = Kfv * np.asarray(defects.get('subgrade_kv_factor_L', one), dtype=float)
+        Cfv_L = Cfv * np.asarray(defects.get('subgrade_cv_factor_L', one), dtype=float)
+        Kfv_R = Kfv * np.asarray(defects.get('subgrade_kv_factor_R', one), dtype=float)
+        Cfv_R = Cfv * np.asarray(defects.get('subgrade_cv_factor_R', one), dtype=float)
 
         FLsV = Kbv_L * rel_L + Cbv_L * vrel_L
         FLsL = Kbh * Ys + Cbh * VYs
@@ -113,12 +117,12 @@ class SubstructureDynamics:
         FLb1 = Kw * (XSub_L - XSubL_1) + Cw * (VSub_L - VSubL_1)
         FLb2 = Kw * (XSub_L - XSubL_2) + Cw * (VSub_L - VSubL_2)
         FLbR = Kw * (XSub_L - XSub_R) + Cw * (VSub_L - VSub_R)
-        FLbf = Kfv * XSub_L + Cfv * VSub_L
+        FLbf = Kfv_L * XSub_L + Cfv_L * VSub_L
 
         FRb1 = Kw * (XSub_R - XSubR_1) + Cw * (VSub_R - VSubR_1)
         FRb2 = Kw * (XSub_R - XSubR_2) + Cw * (VSub_R - VSubR_2)
         FRbL = -FLbR
-        FRbf = Kfv * XSub_R + Cfv * VSub_R
+        FRbf = Kfv_R * XSub_R + Cfv_R * VSub_R
 
         return {'FLsV': FLsV, 'FLsL': FLsL, 'FRsV': FRsV, 'FRsL': FRsL,
                 'FLb1': FLb1, 'FLb2': FLb2, 'FLbR': FLbR, 'FLbf': FLbf,

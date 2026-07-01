@@ -19,6 +19,7 @@ YAML_FILES = [
 ]
 
 STRUCTURE_DEFECT_FILE = 'structure_defects.yaml'
+GEOMETRY_DEFECT_FILE = 'geometry_defects.yaml'
 SETTLEMENT_FILE = 'transition_settlements.yaml'
 
 
@@ -82,6 +83,8 @@ def main() -> None:
 
         if 'structure_defects' in case:
             dump_yaml(case_dir / STRUCTURE_DEFECT_FILE, {'defects': case.get('structure_defects') or []})
+        if 'geometry_defects' in case:
+            dump_yaml(case_dir / GEOMETRY_DEFECT_FILE, {'defects': case.get('geometry_defects') or []})
 
         if 'transition_settlements' in case:
             dump_yaml(case_dir / SETTLEMENT_FILE, {'settlements': case.get('transition_settlements') or []})

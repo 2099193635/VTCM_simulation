@@ -14,6 +14,7 @@ from power_spectrum.German import PowerSpectrum_German
 from power_spectrum.American import PSD_America
 from defect_injector.local_defects import weld_bead
 from defect_injector.settlement_profiles import build_settlement_profile, normalize_settlement_specs
+from defect_injector.geometry_defects import build_geometry_defect_profile, normalize_geometry_defects
 import pandas as pd
 
 
@@ -55,7 +56,8 @@ class Irregularity:
                  external_origin_abs: float = None,
                  external_distance_unit: str = 'auto',
                  external_start_mileage: float = None,
-                 settlement_specs: list[dict] | None = None
+                 settlement_specs: list[dict] | None = None,
+                 geometry_defect_specs: list[dict] | None = None
                  ):
         self.Lc = Lc
         self.Lt = Lt
@@ -93,6 +95,10 @@ class Irregularity:
         self.settlement_profile_full = None
         self.settlement_distance_rel_m = None
         self.settlement_metadata = self.settlement_specs
+        self.geometry_defect_specs = normalize_geometry_defects(geometry_defect_specs)
+        self.geometry_defect_profile_full = None
+        self.geometry_defect_distance_rel_m = None
+        self.geometry_defect_metadata = self.geometry_defect_specs
 
     def prepare_external_irre_data(self):
         df = pd.read_csv(self.input_path)
@@ -111,6 +117,42 @@ class Irregularity:
         self.settlement_profile_full = settlement_profile
         self.settlement_metadata = metadata
         return bpsz_L + settlement_profile, bpsz_R + settlement_profile
+    def _build_zero_geometry_defect_profile(self, size: int, distance_rel_m: np.ndarray | None = None) -> None:
+        if distance_rel_m is None:
+            distance_rel_m = np.arange(size, dtype=float) * self.Tstep * self.Vc
+        self.geometry_defect_distance_rel_m = np.asarray(distance_rel_m, dtype=float)
+        self.geometry_defect_profile_full = {
+            'VL': np.zeros(size, dtype=float),
+            'VR': np.zeros(size, dtype=float),
+            'LL': np.zeros(size, dtype=float),
+            'LR': np.zeros(size, dtype=float),
+        }
+
+    def _apply_geometry_defects_to_random_irregularity(
+        self,
+        x_axis_s: np.ndarray,
+        gd_l_mm: np.ndarray,
+        gd_r_mm: np.ndarray,
+        gx_l_mm: np.ndarray,
+        gx_r_mm: np.ndarray,
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        distance_rel_m = np.asarray(x_axis_s, dtype=float) * self.Vc
+        if not self.geometry_defect_specs:
+            self._build_zero_geometry_defect_profile(len(distance_rel_m), distance_rel_m)
+            self.geometry_defect_metadata = []
+            return gd_l_mm, gd_r_mm, gx_l_mm, gx_r_mm
+
+        profile, metadata = build_geometry_defect_profile(distance_rel_m, self.geometry_defect_specs)
+        self.geometry_defect_distance_rel_m = distance_rel_m
+        self.geometry_defect_profile_full = profile
+        self.geometry_defect_metadata = metadata
+
+        return (
+            gd_l_mm + profile['VL'] * 1000.0,
+            gd_r_mm + profile['VR'] * 1000.0,
+            gx_l_mm + profile['LL'] * 1000.0,
+            gx_r_mm + profile['LR'] * 1000.0,
+        )
 
     def _external_distance_to_time(self, distance_arr: np.ndarray, external_files: dict = None) -> np.ndarray:
         """
@@ -328,6 +370,17 @@ class Irregularity:
                 bpsz_R = np.concatenate([lead_zeros, pad_zeros, VR_Spline])
                 bpsy_L = np.concatenate([lead_zeros, pad_zeros, LL_Spline])
                 bpsy_R = np.concatenate([lead_zeros, pad_zeros, LR_Spline])
+                if self.geometry_defect_profile_full is not None and len(self.geometry_defect_profile_full['VL']) == len(VL_Spline):
+                    prefix_len = len(bpsz_L) - len(VL_Spline)
+                    prefix_zeros = np.zeros(prefix_len, dtype=float)
+                    self.geometry_defect_profile_full = {
+                        key: np.concatenate([prefix_zeros, np.asarray(value, dtype=float)])
+                        for key, value in self.geometry_defect_profile_full.items()
+                    }
+                    self.geometry_defect_distance_rel_m = np.arange(len(bpsz_L), dtype=float) * self.Tstep * self.Vc
+            if self.geometry_defect_profile_full is None:
+                self._build_zero_geometry_defect_profile(len(bpsz_L))
+                self.geometry_defect_metadata = []
 
             # 2.3 数值差分计算激扰速度 (导数)
             dbpsz_L = np.append(np.diff(bpsz_L) / self.Tstep, 0.0)
@@ -430,7 +483,7 @@ class Irregularity:
         # 公式: 左高低 = 高低 + 0.5 * 水平 ; 右高低 = 高低 - 0.5 * 水平
         Irre_GaoDi_L_amp = UM_Data_GaoDi[:, 1] + 0.5 * UM_Data_ShuiPing[:, 1]
         Irre_GaoDi_R_amp = UM_Data_GaoDi[:, 1] - 0.5 * UM_Data_ShuiPing[:, 1]
-        if defect_switch.lower() == 'on':
+        if defect_switch.lower() == 'on' and not self.geometry_defect_specs:
             end_pos = overlay_position + Z_len
             # 安全越界保护机制：防止随机生成的位置太靠后导致数组越界
             if end_pos <= len(Irre_GaoDi_L_amp):
@@ -448,6 +501,16 @@ class Irregularity:
         # 公式: 左轨向 = 轨向 + 0.5 * 轨距 ; 右轨向 = 轨向 - 0.5 * 轨距
         Irre_GuiXiang_L_amp = UM_Data_GuiXiang[:, 1] + 0.5 * UM_Data_Gauge[:, 1]
         Irre_GuiXiang_R_amp = UM_Data_GuiXiang[:, 1] - 0.5 * UM_Data_Gauge[:, 1]
+
+        Irre_GaoDi_L_amp, Irre_GaoDi_R_amp, Irre_GuiXiang_L_amp, Irre_GuiXiang_R_amp = (
+            self._apply_geometry_defects_to_random_irregularity(
+                X_axis,
+                Irre_GaoDi_L_amp,
+                Irre_GaoDi_R_amp,
+                Irre_GuiXiang_L_amp,
+                Irre_GuiXiang_R_amp,
+            )
+        )
 
         # SEC3. 重新组装为 N x 2 的矩阵返回
         Irre_GaoDi_L = np.column_stack((X_axis, Irre_GaoDi_L_amp))
