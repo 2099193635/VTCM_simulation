@@ -1,0 +1,76 @@
+manifest_name: stiffness_four_mechanism_comparison
+base_profile_dir: configs/standard
+output_root: configs/trials/stiffness_four_mechanism_comparison
+common:
+  main_script: generate_main.py
+  project_name: stiffness_four_mechanism_comparison
+  vehicle_type: 高速客车
+  irr_type: 随机不平顺
+  random_seed: 20260701
+  vx_set: 215.0
+  defect_switch: 'off'
+  tz: 10.0
+  save_dof_mode: vehicle
+  save_spy_level: core
+  save_stride: 10
+  plot_figs: 'Off'
+  output_tier: normal
+  save_format: npz_raw
+  note_prefix: stiffness4
+  description: Compare four support-stiffness change mechanisms under identical random geometry and speed.
+
+cases:
+  - case_id: case_00_baseline
+    note: Baseline, fixed random irregularity, no stiffness defect.
+    updates: {}
+
+  - case_id: case_01_fastener_failure_local
+    note: Local fastener loss, five consecutive fasteners, vertical and lateral stiffness/damping removed.
+    updates: {}
+    structure_defects:
+      - type: fastener_failure
+        label: fastener_loss_5nodes
+        start_m: 200.0
+        count: 5
+        side: both
+        directions: both
+        stiffness_factor_eta_k: 0.0
+        damping_factor_eta_c: 0.0
+
+  - case_id: case_02_sleeper_void_local
+    note: Sleeper void, five consecutive sleepers with 2 mm gap.
+    updates: {}
+    structure_defects:
+      - type: sleeper_void
+        label: sleeper_void_2mm_5nodes
+        start_m: 200.0
+        count: 5
+        side: both
+        directions: vertical
+        delta_gap_mm: 2.0
+
+  - case_id: case_03_ballast_softening_100m
+    note: Ballast softening, eta_k=0.2 and eta_c=1.0 over about 100 m.
+    updates: {}
+    structure_defects:
+      - type: ballast_condition
+        label: ballast_soft_eta0p2_100m
+        start_m: 200.0
+        count: 167
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 0.2
+        damping_factor_eta_c: 1.0
+
+  - case_id: case_04_subgrade_weakening_100m
+    note: Subgrade support weakening, eta_k=0.2 and eta_c=0.2 on Kfv/Cfv over about 100 m.
+    updates: {}
+    structure_defects:
+      - type: subgrade_condition
+        label: subgrade_weak_eta0p2_100m
+        start_m: 200.0
+        count: 167
+        side: both
+        directions: vertical
+        stiffness_factor_eta_k: 0.2
+        damping_factor_eta_c: 0.2

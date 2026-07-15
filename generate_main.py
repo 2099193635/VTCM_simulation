@@ -448,6 +448,7 @@ def main(args):
     # 兼容别名："时间序列" 统一映射为 irregularity 内部使用的 "时间谱"
     _type2 = '时间谱' if args.Type2 == '时间序列' else args.Type2
     settlement_specs = []
+    geometry_defect_specs = []
     if _str_to_bool(getattr(args, 'settlement_switch', 'Off')):
         settlement_config = str(getattr(args, 'settlement_config', '')).strip()
         if not settlement_config:
@@ -720,6 +721,7 @@ def main(args):
     files_dir = os.path.dirname(saved_npz_path)
     defect_summary_file = ''
     defect_config_archive = ''
+    geometry_config_archive = ''
     try:
         defect_summary_file = os.path.join(files_dir, 'structure_defects_summary.json')
         with open(defect_summary_file, 'w', encoding='utf-8') as f:

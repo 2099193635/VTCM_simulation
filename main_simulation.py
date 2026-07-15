@@ -12,7 +12,7 @@ def test_data_structures():
     # rail = RailParams()
     # sim = IntegrationParams()
     # sim.setup(veh_emu)
-
+    
     print(f"当前状态：无噪声基础模型 [{veh_emu.vehicle_type}]")
     print(f"车体基础质量 Mc: {veh_emu.Mc} kg")
     print(f"静轮重 P0: {veh_emu.P0:.2f} N")
