@@ -37,7 +37,11 @@ class SystemDynamics:
         # 轨道节点数量
         num_nodes = inti.Nsub + 1
         # 轨枕 (3 段拼接：沉浮Z, 横移Y, 侧滚Roll)
-        m_sleeper = np.full(3 * num_nodes, sub.Ms)
+        m_sleeper = np.concatenate([
+            np.full(num_nodes, sub.Ms),
+            np.full(num_nodes, sub.Ms),
+            np.full(num_nodes, sub.Js),
+        ])
         # 道床块 (2 段拼接：左右侧道床)
         m_ballast = np.full(2 * num_nodes, sub.Mb)
         # 组装整体系统自由度
@@ -113,7 +117,10 @@ class DynamicSolver:
             lock_mask[lock_dofs_veh] = True
         # --- LOCK1: 锁定车体轴箱 ---
         if self.switch_lock_axlebox:
-            lock_mask[35:43] = True  # 轴箱对应车辆系统的最后 8 个自由度 (索引 35 到 42)
+            raise ValueError(
+                "switch_lock_axlebox=On is invalid: the current 35-DOF vehicle "
+                "topology contains no axlebox DOFs. Indices 35:43 belong to rail modes."
+            )
         # --- LOCK2: 锁定轨下结构自由度 ---
         if self.switch_lock_substructure:
             start = self.topo.idx_Sleeper[0]
@@ -218,6 +225,7 @@ class DynamicSolver:
         beta = self.params.beta
         vc = self.params.Vc
         omg = self.params.omega  # 名义滚动角速度 (rad/s) = Vc/R
+        two_point_contact = bool(sim_switches is not None and sim_switches.is_active('Switch_2PointContact'))
         
         # 解包物理引擎
         suspension_sys = engines['suspension']
@@ -237,11 +245,11 @@ class DynamicSolver:
             X_out = np.zeros((Nt_out, car_dofs), dtype=np.float32)
             V_out = np.zeros((Nt_out, car_dofs), dtype=np.float32)
             A_out = np.zeros((Nt_out, car_dofs), dtype=np.float32)
-            spy_dict = self.topo.allocate_spy_memory(switch_2point_contact='On', Nt_out=Nt_out, spy_level=save_spy_level)
+            spy_dict = self.topo.allocate_spy_memory(switch_2point_contact='On' if two_point_contact else 'Off', Nt_out=Nt_out, spy_level=save_spy_level)
             print(" -> [内存模式] save_dof_mode=vehicle：完整系统仅保留3步环形缓存，输出仅记录车辆35自由度。")
         else:
             X, V, A, PadComp_L1, PadComp_L2, PadComp_R1, PadComp_R2, spy_dict = self.topo.allocate_memory(
-                switch_2point_contact='On', Nt_out=Nt_out, spy_level=save_spy_level)
+                switch_2point_contact='On' if two_point_contact else 'Off', Nt_out=Nt_out, spy_level=save_spy_level)
             X_out = V_out = A_out = None
         print(f" -> [保存采样] save_stride={save_stride}, 输出步数: {Nt_out}/{Nt}, spy_level={save_spy_level}")
 
@@ -381,6 +389,11 @@ class DynamicSolver:
                     Irrez_L=IrreZ_L[nw], Irrey_L=IrreL_L[nw], VIrrez_L=VIrreZ_L[nw], VIrrey_L=VIrreL_L[nw],
                     Irrez_R=IrreZ_R[nw], Irrey_R=IrreL_R[nw], VIrrez_R=VIrreZ_R[nw], VIrrey_R=VIrreL_R[nw]
                 )
+                if not two_point_contact:
+                    for key in ('FNx_L2', 'FNy_L2', 'FNz_L2', 'FNx_R2', 'FNy_R2', 'FNz_R2',
+                                'rL2', 'rR2', 'hrL2', 'eL2', 'hrR2', 'eR2'):
+                        f_nw[key] = 0.0
+                    f_nw['a02'] = 0.0
                 
                 # 将第 nw 个轮对的受力组装到数组中
                 for k in wr_forces_keys:

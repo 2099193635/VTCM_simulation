@@ -400,19 +400,19 @@ class ContactMechanics:
             # sub-branch 1: g < 0.1
             m1_small = g1 < 0.1
             if np.any(m1_small):
-                C11[m1][m1_small] = np.pi**2 / (4 * (1 - v))
-                C22[m1][m1_small] = np.pi**2 / 4
-                C23[m1][m1_small] = np.pi * np.sqrt(g1[m1_small]) / (3 * (1 - v)) * (1 + v * (0.5 * an1[m1_small] + np.log(4) - 5))
-                C33[m1][m1_small] = np.pi**2 / (16 * (1 - v) * g1[m1_small])
+                C11[np.flatnonzero(m1)[m1_small]] = np.pi**2 / (4 * (1 - v))
+                C22[np.flatnonzero(m1)[m1_small]] = np.pi**2 / 4
+                C23[np.flatnonzero(m1)[m1_small]] = np.pi * np.sqrt(g1[m1_small]) / (3 * (1 - v)) * (1 + v * (0.5 * an1[m1_small] + np.log(4) - 5))
+                C33[np.flatnonzero(m1)[m1_small]] = np.pi**2 / (16 * (1 - v) * g1[m1_small])
             
             # sub-branch 2: g >= 0.1 (查表 1)
             m1_large = ~m1_small
             if np.any(m1_large):
                 g_eval = g1[m1_large]
-                C11[m1][m1_large] = np.interp(g_eval, cls._Cij_table1[:, 0], cls._Cij_table1[:, 1])
-                C22[m1][m1_large] = np.interp(g_eval, cls._Cij_table1[:, 0], cls._Cij_table1[:, 2])
-                C23[m1][m1_large] = np.interp(g_eval, cls._Cij_table1[:, 0], cls._Cij_table1[:, 3])
-                C33[m1][m1_large] = np.interp(g_eval, cls._Cij_table1[:, 0], cls._Cij_table1[:, 4])
+                C11[np.flatnonzero(m1)[m1_large]] = np.interp(g_eval, cls._Cij_table1[:, 0], cls._Cij_table1[:, 1])
+                C22[np.flatnonzero(m1)[m1_large]] = np.interp(g_eval, cls._Cij_table1[:, 0], cls._Cij_table1[:, 2])
+                C23[np.flatnonzero(m1)[m1_large]] = np.interp(g_eval, cls._Cij_table1[:, 0], cls._Cij_table1[:, 3])
+                C33[np.flatnonzero(m1)[m1_large]] = np.interp(g_eval, cls._Cij_table1[:, 0], cls._Cij_table1[:, 4])
 
         # ---------------- 分支 2: judge == 2 (b <= a) ----------------
         m2 = ~judge_cond
@@ -428,19 +428,19 @@ class ContactMechanics:
                 denom2 = (1 - v) * an_val + 2 * v
                 denom3 = (1 - v) * an_val - 2 + 4 * v
                 
-                C11[m2][m2_small] = 2 * np.pi / (denom1 * g_val) * (1 + (3 - np.log(4)) / denom1)
-                C22[m2][m2_small] = (2 * np.pi / g_val) * (1 + (1 - v) * (3 - np.log(4)) / denom2) / denom2
-                C23[m2][m2_small] = (2 * np.pi / (3 * g_val * np.sqrt(g_val))) / denom3
-                C33[m2][m2_small] = (np.pi / 4) * (1 - (v * an_val - 2) / denom3)
+                C11[np.flatnonzero(m2)[m2_small]] = 2 * np.pi / (denom1 * g_val) * (1 + (3 - np.log(4)) / denom1)
+                C22[np.flatnonzero(m2)[m2_small]] = (2 * np.pi / g_val) * (1 + (1 - v) * (3 - np.log(4)) / denom2) / denom2
+                C23[np.flatnonzero(m2)[m2_small]] = (2 * np.pi / (3 * g_val * np.sqrt(g_val))) / denom3
+                C33[np.flatnonzero(m2)[m2_small]] = (np.pi / 4) * (1 - (v * an_val - 2) / denom3)
 
             # sub-branch 2: g >= 0.1 (查表 2，注意表 2 已在类初始化时翻转为升序！)
             m2_large = ~m2_small
             if np.any(m2_large):
                 g_eval = g2[m2_large]
-                C11[m2][m2_large] = np.interp(g_eval, cls._Cij_table2[:, 0], cls._Cij_table2[:, 1])
-                C22[m2][m2_large] = np.interp(g_eval, cls._Cij_table2[:, 0], cls._Cij_table2[:, 2])
-                C23[m2][m2_large] = np.interp(g_eval, cls._Cij_table2[:, 0], cls._Cij_table2[:, 3])
-                C33[m2][m2_large] = np.interp(g_eval, cls._Cij_table2[:, 0], cls._Cij_table2[:, 4])
+                C11[np.flatnonzero(m2)[m2_large]] = np.interp(g_eval, cls._Cij_table2[:, 0], cls._Cij_table2[:, 1])
+                C22[np.flatnonzero(m2)[m2_large]] = np.interp(g_eval, cls._Cij_table2[:, 0], cls._Cij_table2[:, 2])
+                C23[np.flatnonzero(m2)[m2_large]] = np.interp(g_eval, cls._Cij_table2[:, 0], cls._Cij_table2[:, 3])
+                C33[np.flatnonzero(m2)[m2_large]] = np.interp(g_eval, cls._Cij_table2[:, 0], cls._Cij_table2[:, 4])
 
         C32 = -C23
 
