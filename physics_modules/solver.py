@@ -204,6 +204,20 @@ class DynamicSolver:
                 self._migrate_rail_modal_vector(arr[row, :], cache, shift_nodes)
                 self._migrate_substructure_vector(arr[row, :], cache, shift_nodes)
 
+    @staticmethod
+    def _suspension_curve_inputs(track_geometry, step_i):
+        """Return [front bogie, rear bogie, carbody] radius and d(1/R)/dt."""
+        if track_geometry is None:
+            return np.full(3, np.inf), np.zeros(3)
+        curvature = np.asarray(track_geometry['K'][step_i], dtype=float)
+        curvature_rate = np.asarray(track_geometry['dK'][step_i], dtype=float)
+        if curvature.size < 7 or curvature_rate.size < 7:
+            raise ValueError("track_geometry K/dK must contain 7 vehicle locations")
+        selected = curvature[[4, 5, 6]]
+        radii = np.full(3, np.inf, dtype=float)
+        active = np.abs(selected) > 1e-12
+        radii[active] = 1.0 / selected[active]
+        return radii, curvature_rate[[4, 5, 6]]
     def solve(self, track_excitation, geom_info, engines, track_geometry=None, sim_switches=None, save_dof_mode='full', save_stride=1, save_spy_level='full'):
         """
         执行动力学主循环
@@ -226,6 +240,7 @@ class DynamicSolver:
         vc = self.params.Vc
         omg = self.params.omega  # 名义滚动角速度 (rad/s) = Vc/R
         two_point_contact = bool(sim_switches is not None and sim_switches.is_active('Switch_2PointContact'))
+        extra_force_enabled = bool(sim_switches is not None and sim_switches.is_active('Switch_ExtraForceElement'))
         
         # 解包物理引擎
         suspension_sys = engines['suspension']
@@ -339,7 +354,19 @@ class DynamicSolver:
             # ==========================================
             # STEP 3: 悬挂力计算 (Force_Pre_Sec)
             # ==========================================
-            susp_forces = suspension_sys.compute_forces(state)
+            if (track_geometry is not None
+                    and sim_switches is not None
+                    and sim_switches.is_active('Switch_CurveTrack')):
+                curve_radii, curvature_rate = self._suspension_curve_inputs(track_geometry, i)
+            else:
+                curve_radii, curvature_rate = np.full(3, np.inf), np.zeros(3)
+            susp_forces = suspension_sys.compute_forces(
+                state,
+                R_curve=curve_radii,
+                d_invR_dt=curvature_rate,
+                include_extra=extra_force_enabled,
+                axlebox_state=None,
+            )
 
             # ==========================================
             # STEP 4: 提取钢轨物理状态

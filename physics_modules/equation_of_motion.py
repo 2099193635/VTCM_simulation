@@ -3,13 +3,14 @@ import numpy as np
 class GeneralForceAssembler:
     """系统广义力组装器 (全系统耦合版: 车辆 + 钢轨模态 + 轨下结构)"""
     
-    def __init__(self, veh_params, integration_params, rail_params, subrail_params, mode_params, anitiyawer_params=None):
+    def __init__(self, veh_params, integration_params, rail_params, subrail_params, mode_params, anitiyawer_params=None, extra_force_params=None):
         self.vp = veh_params
         self.ip = integration_params
         self.rp = rail_params
         self.sp = subrail_params
         self.mp = mode_params
         self.ap = anitiyawer_params
+        self.ep = extra_force_params
         
         # ====================================================================
         # 🌟 预计算：钢轨模态抗弯/抗扭刚度向量 (极大提升运行时极速)
@@ -25,6 +26,91 @@ class GeneralForceAssembler:
         self.EIZ = (self.rp.E * self.rp.Iz / self.rp.mr) * (pi_Ljs * nl_modes)**4
         self.GIO = (self.rp.Gk / (self.rp.pr * self.rp.I0)) * (pi_Ljs * nt_modes)**2
 
+    def assemble_extra_vehicle_forces(self, susp_forces):
+        """Project optional suspension elements onto the existing 35 vehicle DOFs.
+
+        Each element force is projected with Q = -F * d(delta)/dq, using the
+        same relative-deformation geometry as SuspensionSystem. Axlebox terms
+        are intentionally absent because axlebox dynamics are outside the
+        current 35-DOF topology.
+        """
+        q = np.zeros(35, dtype=float)
+        ep = self.ep
+        if ep is None:
+            return q
+
+        def add(force, terms):
+            for dof, coefficient in terms:
+                q[dof] -= float(force) * float(coefficient)
+
+        bogie_of_wheel = (0, 0, 1, 1)
+        wheel_sign = (-1.0, 1.0, -1.0, 1.0)
+        for i, (bogie, sign) in enumerate(zip(bogie_of_wheel, wheel_sign)):
+            bt = 5 + 5 * bogie
+            wh = 15 + 5 * i
+
+            add(susp_forces['Fpvdz_L'][i], (
+                (bt + 1, 1.0), (wh + 1, -1.0),
+                (bt + 3, sign * ep.Lpvdx_Bogie),
+                (wh + 2, ep.dpvd), (bt + 2, -ep.dpvd),
+            ))
+            add(susp_forces['Fpvdz_R'][i], (
+                (bt + 1, 1.0), (wh + 1, -1.0),
+                (bt + 3, sign * ep.Lpvdx_Bogie),
+                (wh + 2, -ep.dpvd), (bt + 2, ep.dpvd),
+            ))
+
+            add(susp_forces['Fnodex_L'][i], (
+                (bt + 4, ep.dnode), (bt + 3, ep.Ht_node),
+                (wh + 4, -ep.dnode),
+            ))
+            add(susp_forces['Fnodex_R'][i], (
+                (bt + 4, -ep.dnode), (bt + 3, ep.Ht_node),
+                (wh + 4, ep.dnode),
+            ))
+            lateral_terms = (
+                (wh, 1.0), (bt, -1.0), (bt + 2, ep.Ht_node),
+                (bt + 4, sign * ep.Lnodex_Bogie),
+                (wh + 4, sign * ep.Lnode_axlebox),
+            )
+            add(susp_forces['Fnodey_L'][i], lateral_terms)
+            add(susp_forces['Fnodey_R'][i], lateral_terms)
+            add(susp_forces['Fnodez_L'][i], (
+                (bt + 1, 1.0), (wh + 1, -1.0),
+                (bt + 3, sign * ep.Lnodex_Bogie),
+                (wh + 2, ep.dnode), (bt + 2, -ep.dnode),
+            ))
+            add(susp_forces['Fnodez_R'][i], (
+                (bt + 1, 1.0), (wh + 1, -1.0),
+                (bt + 3, sign * ep.Lnodex_Bogie),
+                (wh + 2, -ep.dnode), (bt + 2, ep.dnode),
+            ))
+
+        for bogie, sign in enumerate((-1.0, 1.0)):
+            bt = 5 + 5 * bogie
+            add(susp_forces['Fsvdz_L'][bogie], (
+                (1, 1.0), (bt + 1, -1.0),
+                (bt + 2, ep.dsvd), (2, -ep.dsvd),
+                (3, sign * ep.Lsvd_Car),
+            ))
+            add(susp_forces['Fsvdz_R'][bogie], (
+                (1, 1.0), (bt + 1, -1.0),
+                (bt + 2, -ep.dsvd), (2, ep.dsvd),
+                (3, sign * ep.Lsvd_Car),
+            ))
+            add(susp_forces['Fsldy_L'][bogie], (
+                (bt, 1.0), (0, -1.0),
+                (bt + 2, ep.Ht_sld), (2, ep.Hc_sld),
+                (4, sign * ep.Lsld_Car_L[bogie]),
+                (bt + 4, ep.Lsld_Bogie),
+            ))
+            add(susp_forces['Fsldy_R'][bogie], (
+                (bt, 1.0), (0, -1.0),
+                (bt + 2, ep.Ht_sld), (2, ep.Hc_sld),
+                (4, sign * ep.Lsld_Car_R[bogie]),
+                (bt + 4, -ep.Lsld_Bogie),
+            ))
+        return q
     def assemble_GF_SYSTEM(self, state, susp_forces, wr_forces, fastener_forces=None, subrail_forces=None, rail_modal_sys=None, rail_states=None):
         """
         将悬挂力、轮轨接触力、轨道力投影并组装为系统全局广义力向量
@@ -115,6 +201,7 @@ class GeneralForceAssembler:
             GF_Wheelset_Y[2:3], GF_Wheelset_Z[2:3], GF_Wheelset_Roll[2:3], GF_Wheelset_Spin[2:3], GF_Wheelset_Yaw[2:3],
             GF_Wheelset_Y[3:4], GF_Wheelset_Z[3:4], GF_Wheelset_Roll[3:4], GF_Wheelset_Spin[3:4], GF_Wheelset_Yaw[3:4]
         ])
+        GF_VEHICLE += self.assemble_extra_vehicle_forces(susp_forces)
 
         # 如果没有传入下部结构受力，则短路返回纯车辆受力
         if fastener_forces is None or subrail_forces is None:

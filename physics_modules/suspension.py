@@ -1,4 +1,4 @@
-'''
+r'''
 FilePath: \VTCM_PYTHON\physics_modules\suspension.py
 Description: 车辆系统一系及二系悬挂力元核心计算模块 (极致性能向量化版)
 '''
@@ -51,7 +51,7 @@ class SuspensionSystem:
         print(" -> [警告] 正在调用机车测试框架，核心力元公式暂未实现！")
         raise NotImplementedError("机车具体公式后续补充")
     
-    def _compute_passenger_forces(self, state: StepState, R_curve, d_invR_dt):
+    def _compute_passenger_forces(self, state: StepState, R_curve, d_invR_dt, include_extra=False, axlebox_state=None):
         """
         核心客车悬挂力元计算
         """
@@ -63,6 +63,18 @@ class SuspensionSystem:
         # [修复] 严格对应 MATLAB 的 (-1)^i (i=1,2,3,4)，实现正确的反对称性
         sign_pow = np.array([-1, 1, -1, 1])
         sign_pow_sec = np.array([-1, 1])
+        axlebox_state = {} if axlebox_state is None else axlebox_state
+
+        def axlebox_vector(name):
+            value = np.asarray(axlebox_state.get(name, np.zeros(4)), dtype=float)
+            if value.shape != (4,):
+                raise ValueError(f"axlebox_state[{name!r}] must have shape (4,), got {value.shape}")
+            return value
+
+        axle_spin_L = axlebox_vector('spin_L')
+        axle_spin_R = axlebox_vector('spin_R')
+        axle_spin_vel_L = axlebox_vector('spin_vel_L')
+        axle_spin_vel_R = axlebox_vector('spin_vel_R')
 
         # ================= 0. 极速状态解析 (零拷贝视图) =================
         # 车体状态 (索引 0~4)
@@ -159,17 +171,17 @@ class SuspensionSystem:
         Fsvdz_L, Fsvdz_R = np.zeros(2), np.zeros(2)
         Fsldy_L, Fsldy_R = np.zeros(2), np.zeros(2)
 
-        if ep:
+        if ep and include_extra:
             # 一系额外力元
             for i in range(4):
                 b_id = bogie_idx[i]
                 s_p = sign_pow[i]
 
-                # 提取如果存在的话轴箱的转角
-                spinL_i = state.XCar[35+i] if len(state.XCar) > 35 else 0.0
-                spinR_i = state.XCar[39+i] if len(state.XCar) > 39 else 0.0
-                dspinL_i = state.VCar[35+i] if len(state.VCar) > 35 else 0.0
-                dspinR_i = state.VCar[39+i] if len(state.VCar) > 39 else 0.0
+                # 当前35-DOF模型默认轴箱转角为零；可通过预留接口显式传入
+                spinL_i = axle_spin_L[i]
+                spinR_i = axle_spin_R[i]
+                dspinL_i = axle_spin_vel_L[i]
+                dspinR_i = axle_spin_vel_R[i]
 
                 # 一系垂向减振器 PVD
                 Fpvdz_L[i] = ep.Kz_pvd * (Zt[b_id] - state.X_ZW[i] + s_p * ep.Lpvdx_Bogie * Spint[b_id] + ep.dpvd * state.X_RollW[i] - ep.dpvd * Rollt[b_id] - s_p * ep.Lpvdx_axlebox * spinL_i) + \
@@ -220,7 +232,7 @@ class SuspensionSystem:
 
         return forces
             
-    def compute_forces(self, state: StepState, R_curve: np.ndarray = np.array([np.inf, np.inf, np.inf]), d_invR_dt: np.ndarray = np.zeros(3)):
+    def compute_forces(self, state: StepState, R_curve: np.ndarray = np.array([np.inf, np.inf, np.inf]), d_invR_dt: np.ndarray = np.zeros(3), include_extra: bool = False, axlebox_state=None):
         """
         统一的悬挂力计算入口
         :param state: 从 SystemTopology 提取的 StepState 对象
@@ -231,4 +243,4 @@ class SuspensionSystem:
         elif self.p.category == '机车':
             return self._compute_loco_forces(state, R_curve, d_invR_dt)
         elif self.p.category == '客车':
-            return self._compute_passenger_forces(state, R_curve, d_invR_dt)
+            return self._compute_passenger_forces(state, R_curve, d_invR_dt, include_extra=include_extra, axlebox_state=axlebox_state)

@@ -232,8 +232,8 @@ def parse_arguments():
     parser.add_argument('--modal_max_modes', type=int, default=1200, help='frequency模态截断搜索上限，防止长大结构阶数无限增长')
 
     # 5. 积分参数
-    parser.add_argument('--alpha', type=float, default=0.5, help='Newmark-beta 方法的 alpha 参数')
-    parser.add_argument('--beta', type=float, default=0.25, help='Newmark-beta 方法的 beta 参数')
+    parser.add_argument('--alpha', type=float, default=0.5, help='翟方法显式两步积分的 alpha 参数')
+    parser.add_argument('--beta', type=float, default=0.25, help='翟方法显式两步积分的 beta 参数')
     parser.add_argument('--g', type=float, default=9.81, help='重力加速度 (m/s^2)')
 
     # 6. 力元控制开关
@@ -347,8 +347,8 @@ def main(args):
         Nsub=_n_sub_runtime,                # 设定轨下结构离散单元数量
         X0 = args.X0,                       # 设定仿真初始状态位移
         enforce_track_boundary = not _use_true_moving_window,
-        alpha = args.alpha,                 # Newmark-beta 方法的 alpha 参数
-        beta = args.beta,                   # Newmark-beta 方法的 beta 参数
+        alpha = args.alpha,                 # 翟方法显式两步积分的 alpha 参数
+        beta = args.beta,                   # 翟方法显式两步积分的 beta 参数
         g = args.g                         # 重力加速度
     )
 
@@ -521,7 +521,7 @@ def main(args):
     wr_interaction = WheelRailInteraction(geom_info, veh_params=veh_emu)
     gf_assembler = GeneralForceAssembler(
         veh_params=veh_emu, integration_params=integration, rail_params=rail, 
-        subrail_params=subrail_standard, mode_params=mode_params, anitiyawer_params=ap
+        subrail_params=subrail_standard, mode_params=mode_params, anitiyawer_params=ap, extra_force_params=ep
     )
     sys_dynamics = SystemDynamics(veh_params=veh_emu, veh_int=integration, para_subrail=subrail_standard, control_mode= mode_params, para_extra_force=ep)
     physics_engines = {
@@ -548,6 +548,8 @@ def main(args):
     )
     _save_steps = np.asarray(spy_data.get('Output_step_index', np.arange(A.shape[0]) * max(1, int(args.save_stride))), dtype=np.int64)
     _dt_output = integration.Tstep * max(1, int(args.save_stride))
+    spy_data['axlebox_dynamics'] = np.array(False)
+    spy_data['extra_force_35dof_approximation'] = np.array(_str_to_bool(args.switch_extra_force_element))
 
     # =========================Part 4.1 追加后处理元数据=========================#
     # 保存不平顺（采用第4轮对基准轨道激励，长度 Nt+1）
@@ -802,6 +804,9 @@ def main(args):
             f.write(f"structure_boundary_buffer_m: {float(_structure_window['boundary_buffer_m']):.6f}\n")
             f.write(f"structure_state_migration: {args.structure_state_migration}\n")
             f.write(f"structure_state_migration_active: {bool(_structure_window.get('state_migration', False))}\n")
+            f.write(f"switch_extra_force_element: {args.switch_extra_force_element}\n")
+            f.write("extra_force_model: 35dof_approximation\n")
+            f.write("axlebox_dynamics: false\n")
             f.write(f"structure_defect_switch: {args.structure_defect_switch}\n")
             f.write(f"structure_defect_config: {args.structure_defect_config}\n")
             f.write(f"structure_defect_record_count: {int(_structure_defect_summary.get('record_count', 0))}\n")
