@@ -489,10 +489,47 @@ class ResultPlotter:
             print(f" -> Figures saved: {png_path2}")
             print(f" -> Figures saved: {svg_path2}")
 
+        # --------------------- Figure 3: Component stiffness fields ---------------------
+        fig3, axes3 = plt.subplots(2, 2, figsize=(18, 10), constrained_layout=True)
+        fig3.suptitle('Component Stiffness Variation Along Track', fontsize=16, fontweight='bold')
+
+        stiffness_specs = [
+            ('Fastener_eta_k_L_ref', 'Fastener_eta_k_R_ref', 'Fastener stiffness', 'Stiffness factor eta_k', 1.0),
+            ('Sleeper_void_gap_L_m_ref', 'Sleeper_void_gap_R_m_ref', 'Sleeper void', 'Void gap (mm)', 1000.0),
+            ('Ballast_eta_k_L_ref', 'Ballast_eta_k_R_ref', 'Ballast stiffness', 'Stiffness factor eta_k', 1.0),
+            ('Subgrade_eta_k_L_ref', 'Subgrade_eta_k_R_ref', 'Subgrade stiffness', 'Stiffness factor eta_k', 1.0),
+        ]
+        for ax, (left_key, right_key, title, ylabel, scale) in zip(axes3.ravel(), stiffness_specs):
+            left = ResultPlotter._safe_1d(spy_dict.get(left_key))
+            right = ResultPlotter._safe_1d(spy_dict.get(right_key))
+            n = min(len(s_rel), len(left), len(right))
+            if n > 1:
+                ax.step(s_rel[:n], left[:n] * scale, where='mid', label='Left', color='#1f77b4', linewidth=1.4)
+                ax.step(s_rel[:n], right[:n] * scale, where='mid', label='Right', color='#d62728', linewidth=1.2, alpha=0.85)
+                ax.set_xlabel('Relative mileage (m)')
+                ax.set_ylabel(ylabel)
+                ax.legend(frameon=False, loc='best')
+            else:
+                ax.text(0.5, 0.5, 'No component label data', ha='center', va='center', transform=ax.transAxes)
+            ax.set_title(title)
+            ax.grid(True)
+            if distance_xlim_m is not None:
+                ax.set_xlim(*distance_xlim_m)
+
+        if save_dir:
+            png_path3 = os.path.join(save_dir, 'component_stiffness_overview.png')
+            svg_path3 = os.path.join(save_dir, 'component_stiffness_overview.svg')
+            fig3.savefig(png_path3, dpi=300, bbox_inches='tight')
+            fig3.savefig(svg_path3, bbox_inches='tight')
+            saved_paths.extend([png_path3, svg_path3])
+            print(f" -> Figures saved: {png_path3}")
+            print(f" -> Figures saved: {svg_path3}")
+
         if show:
             plt.show()
         else:
             plt.close(fig)
             plt.close(fig2)
+            plt.close(fig3)
 
         return saved_paths

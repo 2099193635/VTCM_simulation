@@ -303,6 +303,68 @@ class StructureDefectManager:
             "records": rows,
         }
 
+    def spatial_labels(self, abs_positions_m):
+        """Return component-wise defect labels on arbitrary absolute positions."""
+        positions = np.asarray(abs_positions_m, dtype=float).reshape(-1)
+        ones = np.ones(positions.size, dtype=np.float32)
+        zeros = np.zeros(positions.size, dtype=np.float32)
+        out = {
+            "fastener_eta_L": ones.copy(),
+            "fastener_eta_R": ones.copy(),
+            "void_gap_L_m": zeros.copy(),
+            "void_gap_R_m": zeros.copy(),
+            "void_active_L": np.zeros(positions.size, dtype=bool),
+            "void_active_R": np.zeros(positions.size, dtype=bool),
+            "ballast_eta_L": ones.copy(),
+            "ballast_eta_R": ones.copy(),
+            "subgrade_eta_L": ones.copy(),
+            "subgrade_eta_R": ones.copy(),
+        }
+        if not self.is_active():
+            return out
+
+        for record in self.records:
+            directions = _split_words(record.directions, "both")
+            if record.kind != "sleeper_void" and not (
+                directions & {"vertical", "v", "z", "both", "all"}
+            ):
+                continue
+            start_m = float(record.abs_start_m)
+            end_m = start_m + float(record.count) * self.node_spacing_m
+            tol = max(1e-9, 1e-9 * self.node_spacing_m)
+            active = (positions >= start_m - tol) & (positions < end_m - tol)
+            if not np.any(active):
+                continue
+
+            sides = _split_words(record.side, "both")
+            left = bool(sides & {"left", "l", "both", "all"})
+            right = bool(sides & {"right", "r", "both", "all"})
+            factor = np.float32(record.stiffness_factor)
+
+            if record.kind == "fastener_failure":
+                if left:
+                    out["fastener_eta_L"][active] *= factor
+                if right:
+                    out["fastener_eta_R"][active] *= factor
+            elif record.kind == "sleeper_void":
+                gap = np.float32(max(0.0, record.delta_gap_m))
+                if left:
+                    out["void_active_L"][active] = True
+                    out["void_gap_L_m"][active] = np.maximum(out["void_gap_L_m"][active], gap)
+                if right:
+                    out["void_active_R"][active] = True
+                    out["void_gap_R_m"][active] = np.maximum(out["void_gap_R_m"][active], gap)
+            elif record.kind == "ballast_condition":
+                if left:
+                    out["ballast_eta_L"][active] *= factor
+                if right:
+                    out["ballast_eta_R"][active] *= factor
+            elif record.kind == "subgrade_condition":
+                if left:
+                    out["subgrade_eta_L"][active] *= factor
+                if right:
+                    out["subgrade_eta_R"][active] *= factor
+        return out
     def ballast_stiffness_field(self, abs_positions_m):
         """Return ballast vertical stiffness factors on arbitrary absolute positions.
 

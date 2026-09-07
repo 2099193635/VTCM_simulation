@@ -2,7 +2,7 @@
 Author: Niscienc 60505912+2099193635@users.noreply.github.com
 Date: 2026-06-22 16:31:39
 LastEditors: Niscienc 60505912+2099193635@users.noreply.github.com
-LastEditTime: 2026-06-29 13:34:15
+LastEditTime: 2026-07-17 12:45:23
 FilePath: \vtcm-simulation\generate_main.py
 Description: 
 
@@ -175,7 +175,7 @@ def parse_arguments():
     
     # 1. 宏观运行参量
     parser.add_argument('--vx_set', type=float, default=215.0, help='车辆运行速度 (km/h)')
-    parser.add_argument('--tz', type=float, default=5.0, help='仿真总时长 (s)')
+    parser.add_argument('--tz', type=float, default=10.0, help='仿真总时长 (s)')
     parser.add_argument('--tstep', type=float, default=2e-4, help='积分步长 (s)')
     parser.add_argument('--start_mileage', type=float, default=271.822147720011, help='仿真起始绝对里程 (km)')
     parser.add_argument('--curve_file_dir', type=str, default='preprocessing/台账/处理后/curve_parameters.csv', help='曲线参数文件路径')
@@ -248,6 +248,7 @@ def parse_arguments():
     parser.add_argument('--switch_lock_veh_non_z', type=str, default='Off', choices=['On', 'Off'], help='是否锁定车辆非垂向自由度')
     parser.add_argument('--switch_lock_axlebox', type=str, default='Off', choices=['On', 'Off'], help='是否锁定轴箱自由度')
     parser.add_argument('--switch_lock_substructure', type=str, default='Off', choices=['On', 'Off'], help='是否锁定轨道下部结构自由度')
+    parser.add_argument('--switch_prescribe_wheel_spin', type=str, default='On', choices=['On', 'Off'], help='Prescribe nominal wheelset spin from vehicle speed')
     
     # 8. 输出与可视化控制
     parser.add_argument('--save_data', type=str, default='On', choices=['On', 'Off'], help='是否将结果保存到本地')
@@ -535,7 +536,8 @@ def main(args):
                             integration_params=integration,
                             switch_lock_veh_non_z = args.switch_lock_veh_non_z,  
                             switch_lock_axlebox = args.switch_lock_axlebox, 
-                            switch_lock_substructure = args.switch_lock_substructure)
+                            switch_lock_substructure = args.switch_lock_substructure,
+                            switch_prescribe_wheel_spin = args.switch_prescribe_wheel_spin)
     X, V, A, spy_data = solver.solve(
         track_excitation=track_excitation,
         geom_info=geom_info,
@@ -550,6 +552,7 @@ def main(args):
     _dt_output = integration.Tstep * max(1, int(args.save_stride))
     spy_data['axlebox_dynamics'] = np.array(False)
     spy_data['extra_force_35dof_approximation'] = np.array(_str_to_bool(args.switch_extra_force_element))
+    spy_data['wheel_spin_prescribed'] = np.array(_str_to_bool(args.switch_prescribe_wheel_spin))
 
     # =========================Part 4.1 追加后处理元数据=========================#
     # 保存不平顺（采用第4轮对基准轨道激励，长度 Nt+1）
@@ -632,17 +635,48 @@ def main(args):
         spy_data['Track_gradient']        = g_profile.astype(np.float32)
         spy_data['Track_vertical_profile_m'] = z_profile.astype(np.float32)
         try:
-            _stiffness_field = _structure_defects.ballast_stiffness_field(sim_s_abs)
-            spy_data['Stiffness_eta_k_L_ref'] = _stiffness_field['eta_k_L'].astype(np.float32)
-            spy_data['Stiffness_eta_k_R_ref'] = _stiffness_field['eta_k_R'].astype(np.float32)
-            spy_data['Stiffness_irregularity_mask_L'] = _stiffness_field['mask_L'].astype(np.int8)
-            spy_data['Stiffness_irregularity_mask_R'] = _stiffness_field['mask_R'].astype(np.int8)
+            _component_labels = _structure_defects.spatial_labels(sim_s_abs)
+            _label_map = {
+                'Fastener_eta_k_L_ref': 'fastener_eta_L',
+                'Fastener_eta_k_R_ref': 'fastener_eta_R',
+                'Sleeper_void_gap_L_m_ref': 'void_gap_L_m',
+                'Sleeper_void_gap_R_m_ref': 'void_gap_R_m',
+                'Ballast_eta_k_L_ref': 'ballast_eta_L',
+                'Ballast_eta_k_R_ref': 'ballast_eta_R',
+                'Subgrade_eta_k_L_ref': 'subgrade_eta_L',
+                'Subgrade_eta_k_R_ref': 'subgrade_eta_R',
+            }
+            for _output_key, _label_key in _label_map.items():
+                spy_data[_output_key] = np.asarray(_component_labels[_label_key], dtype=np.float32)
+            spy_data['Sleeper_void_active_L_ref'] = np.asarray(_component_labels['void_active_L'], dtype=np.int8)
+            spy_data['Sleeper_void_active_R_ref'] = np.asarray(_component_labels['void_active_R'], dtype=np.int8)
+
+            # Backward-compatible aliases retain the historical ballast-only meaning.
+            spy_data['Stiffness_eta_k_L_ref'] = spy_data['Ballast_eta_k_L_ref']
+            spy_data['Stiffness_eta_k_R_ref'] = spy_data['Ballast_eta_k_R_ref']
+            spy_data['Stiffness_irregularity_mask_L'] = (
+                np.abs(spy_data['Ballast_eta_k_L_ref'] - 1.0) > 1e-6
+            ).astype(np.int8)
+            spy_data['Stiffness_irregularity_mask_R'] = (
+                np.abs(spy_data['Ballast_eta_k_R_ref'] - 1.0) > 1e-6
+            ).astype(np.int8)
         except Exception as e:
-            print(f" -> [warning] failed to write stiffness irregularity labels: {e}")
-            spy_data['Stiffness_eta_k_L_ref'] = np.ones_like(sim_s_abs, dtype=np.float32)
-            spy_data['Stiffness_eta_k_R_ref'] = np.ones_like(sim_s_abs, dtype=np.float32)
-            spy_data['Stiffness_irregularity_mask_L'] = np.zeros_like(sim_s_abs, dtype=np.int8)
-            spy_data['Stiffness_irregularity_mask_R'] = np.zeros_like(sim_s_abs, dtype=np.int8)
+            print(f" -> [warning] failed to write component stiffness labels: {e}")
+            _ones_label = np.ones_like(sim_s_abs, dtype=np.float32)
+            _zeros_label = np.zeros_like(sim_s_abs, dtype=np.float32)
+            for _key in (
+                'Fastener_eta_k_L_ref', 'Fastener_eta_k_R_ref',
+                'Ballast_eta_k_L_ref', 'Ballast_eta_k_R_ref',
+                'Subgrade_eta_k_L_ref', 'Subgrade_eta_k_R_ref',
+                'Stiffness_eta_k_L_ref', 'Stiffness_eta_k_R_ref',
+            ):
+                spy_data[_key] = _ones_label.copy()
+            spy_data['Sleeper_void_gap_L_m_ref'] = _zeros_label.copy()
+            spy_data['Sleeper_void_gap_R_m_ref'] = _zeros_label.copy()
+            spy_data['Sleeper_void_active_L_ref'] = _zeros_label.astype(np.int8)
+            spy_data['Sleeper_void_active_R_ref'] = _zeros_label.astype(np.int8)
+            spy_data['Stiffness_irregularity_mask_L'] = _zeros_label.astype(np.int8)
+            spy_data['Stiffness_irregularity_mask_R'] = _zeros_label.astype(np.int8)
         # 附加保存全部 4 个轮对的曲率/超高矩阵，便于后处理对比
         spy_data['Track_K_all_ws'] = track_geometry['K'][_save_steps, :4].astype(np.float32)   # (Nout, 4) 仅轮对位置
         spy_data['Track_H_all_ws'] = track_geometry['H'][_save_steps, :4].astype(np.float32)   # (Nout, 4) 仅轮对位置

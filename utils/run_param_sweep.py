@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import argparse
+import os
 import subprocess
 import sys
 import threading
 import time
+from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -35,7 +37,27 @@ def _tee_pipe(pipe, terminal_stream, log_file):
         pipe.close()
 
 
-def run_with_live_logs(command: list[str], cwd: Path, stdout_log: Path, stderr_log: Path) -> int:
+def _worker_environment(threads_per_worker: int) -> dict[str, str]:
+    env = os.environ.copy()
+    thread_count = str(max(1, int(threads_per_worker)))
+    for name in (
+        'OMP_NUM_THREADS',
+        'MKL_NUM_THREADS',
+        'OPENBLAS_NUM_THREADS',
+        'NUMEXPR_NUM_THREADS',
+    ):
+        env[name] = thread_count
+    env.setdefault('PYTHONIOENCODING', 'utf-8')
+    return env
+
+
+def run_with_live_logs(
+    command: list[str],
+    cwd: Path,
+    stdout_log: Path,
+    stderr_log: Path,
+    env: dict[str, str] | None = None,
+) -> int:
     with stdout_log.open('w', encoding='utf-8', errors='replace') as out_file, stderr_log.open('w', encoding='utf-8', errors='replace') as err_file:
         process = subprocess.Popen(
             command,
@@ -43,8 +65,10 @@ def run_with_live_logs(command: list[str], cwd: Path, stdout_log: Path, stderr_l
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
+            encoding='utf-8',
             errors='replace',
             bufsize=1,
+            env=env,
         )
         threads = [
             threading.Thread(target=_tee_pipe, args=(process.stdout, sys.stdout, out_file), daemon=True),
@@ -56,6 +80,28 @@ def run_with_live_logs(command: list[str], cwd: Path, stdout_log: Path, stderr_l
         for thread in threads:
             thread.join()
         return return_code
+
+
+def run_to_logs(
+    command: list[str],
+    cwd: Path,
+    stdout_log: Path,
+    stderr_log: Path,
+    env: dict[str, str] | None = None,
+) -> int:
+    """Run one case without interleaving parallel worker output in the terminal."""
+    with stdout_log.open('w', encoding='utf-8', errors='replace') as out_file, stderr_log.open('w', encoding='utf-8', errors='replace') as err_file:
+        completed = subprocess.run(
+            command,
+            cwd=cwd,
+            stdout=out_file,
+            stderr=err_file,
+            text=True,
+            encoding='utf-8',
+            errors='replace',
+            env=env,
+        )
+    return completed.returncode
 
 
 def load_yaml(path: Path) -> dict[str, Any]:
@@ -149,6 +195,124 @@ def build_case_command(
     return command
 
 
+def find_case_result(workspace_root: Path, project_name: str, run_note: str, started_at: float) -> Path:
+    project_root = workspace_root / 'results' / project_name
+    candidates = []
+    if project_root.exists():
+        for result_file in project_root.glob(f'*{run_note}-*/files/simulation_result.npz'):
+            try:
+                if result_file.stat().st_mtime >= started_at - 2.0:
+                    candidates.append(result_file)
+            except OSError:
+                continue
+    if not candidates:
+        raise FileNotFoundError(f'No result file found for run_note={run_note} under {project_root}')
+    return max(candidates, key=lambda path: path.stat().st_mtime)
+
+
+def has_completed_case_result(workspace_root: Path, project_name: str, run_note: str) -> bool:
+    """Return whether a prior run for this exact case has a result artifact."""
+    project_root = workspace_root / 'results' / project_name
+    if not project_root.exists():
+        return False
+    return any(project_root.glob(f'*{run_note}-*/files/simulation_result.npz'))
+
+
+def run_extended_response_overview(python_exe: str, workspace_root: Path, result_file: Path, log_file: Path) -> int:
+    analysis_code = (
+        "from analyze_results import run_all_analyses; "
+        f"run_all_analyses(target_file={str(result_file)!r}, "
+        "run_core=True, run_irre=False, run_accel=False, run_psd=False, show=False)"
+    )
+    command = [python_exe, '-c', analysis_code]
+    with log_file.open('w', encoding='utf-8', errors='replace') as output:
+        completed = subprocess.run(
+            command, cwd=workspace_root, stdout=output, stderr=subprocess.STDOUT, text=True
+        )
+    figures_dir = result_file.parents[1] / 'figures'
+    expected = [
+        figures_dir / 'extended_response_overview.png',
+        figures_dir / 'extended_response_overview.svg',
+        figures_dir / 'component_stiffness_overview.png',
+        figures_dir / 'component_stiffness_overview.svg',
+    ]
+    if completed.returncode == 0 and not all(path.exists() for path in expected):
+        return 2
+    return completed.returncode
+
+
+def execute_case(
+    *,
+    case_index: int,
+    case: dict[str, Any],
+    python_exe: str,
+    workspace_root: Path,
+    output_root: Path,
+    logs_dir: Path,
+    common: dict[str, Any],
+    manifest_name: str,
+    extra_args: list[str],
+    analyze_after_case: bool,
+    dry_run: bool,
+    stream_logs: bool,
+    threads_per_worker: int,
+) -> dict[str, Any]:
+    case_id = str(case['case_id'])
+    profile_dir = output_root / case_id
+    if not profile_dir.exists():
+        raise FileNotFoundError(f'未找到 case 参数目录: {profile_dir}，可先加 --build-first')
+
+    command = build_case_command(
+        python_exe=python_exe,
+        workspace_root=workspace_root,
+        common=common,
+        profile_dir=profile_dir,
+        case_id=case_id,
+        manifest_name=manifest_name,
+        case_args=case.get('case_args', {}) or {},
+        extra_args=extra_args,
+    )
+    case_started_wall = time.time()
+    case_started = time.perf_counter()
+    status = 'dry-run'
+    return_code = None
+    stdout_log = None
+    stderr_log = None
+    analysis_log = None
+
+    if not dry_run:
+        stdout_log = logs_dir / f'{case_id}.out.log'
+        stderr_log = logs_dir / f'{case_id}.err.log'
+        env = _worker_environment(threads_per_worker)
+        runner = run_with_live_logs if stream_logs else run_to_logs
+        return_code = runner(command, workspace_root, stdout_log, stderr_log, env=env)
+        status = 'success' if return_code == 0 else 'failed'
+        if status == 'success' and analyze_after_case:
+            project_name = str(common.get('project_name', manifest_name))
+            run_note = f"{common.get('note_prefix', 'sweep')}_{case_id}"
+            result_file = find_case_result(workspace_root, project_name, run_note, case_started_wall)
+            analysis_log = logs_dir / f'{case_id}.analysis.log'
+            analysis_return_code = run_extended_response_overview(
+                python_exe, workspace_root, result_file, analysis_log
+            )
+            if analysis_return_code != 0:
+                return_code = analysis_return_code
+                status = 'analysis_failed'
+
+    return {
+        'case_index': case_index,
+        'case_id': case_id,
+        'profile_dir': str(profile_dir),
+        'command': command,
+        'status': status,
+        'return_code': return_code,
+        'elapsed_s': round(time.perf_counter() - case_started, 3),
+        'stdout_log': str(stdout_log) if stdout_log is not None else None,
+        'stderr_log': str(stderr_log) if stderr_log is not None else None,
+        'analysis_log': str(analysis_log) if analysis_log is not None else None,
+    }
+
+
 def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description='按 sweep manifest 批量运行 generate_main.py')
     parser.add_argument('--manifest', required=True, help='扫描清单 YAML 路径')
@@ -157,13 +321,25 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument('--dry-run', action='store_true', help='只打印将执行的命令，不实际运行')
     parser.add_argument('--cases', nargs='*', help='只运行指定 case_id 列表')
     parser.add_argument('--skip-cases', nargs='*', help='跳过指定 case_id 列表')
+    parser.add_argument(
+        '--skip-completed',
+        action='store_true',
+        help='扫描 results/<project_name>，自动跳过已有 simulation_result.npz 的 case',
+    )
+    parser.add_argument('--analyze-after-case', action='store_true', help='Generate extended_response_overview after each successful case')
     parser.add_argument('--stop-on-error', action='store_true', help='遇到首个失败 case 即停止')
+    parser.add_argument('--workers', type=int, default=1, help='同时运行的仿真进程数，默认 1')
+    parser.add_argument('--threads-per-worker', type=int, default=1, help='每个仿真进程允许使用的数值库线程数，默认 1')
     parser.add_argument('--extra-args', nargs=argparse.REMAINDER, default=[], help='透传给 generate_main.py 的额外参数（放在命令最后）')
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_arguments()
+    if args.workers < 1:
+        raise ValueError('--workers 必须大于等于 1')
+    if args.threads_per_worker < 1:
+        raise ValueError('--threads-per-worker 必须大于等于 1')
     manifest_path = Path(args.manifest).resolve()
     workspace_root = manifest_path.parent.parent.parent
     manifest = load_yaml(manifest_path)
@@ -178,7 +354,26 @@ def main() -> None:
         raise ValueError('manifest 中 cases 必须是非空列表')
 
     selected_cases = normalize_cases(cases, args.cases, args.skip_cases)
+    if args.skip_completed:
+        project_name = str(common.get('project_name', manifest_name))
+        note_prefix = str(common.get('note_prefix', 'sweep'))
+        before_count = len(selected_cases)
+        selected_cases = [
+            case for case in selected_cases
+            if not has_completed_case_result(
+                workspace_root,
+                project_name,
+                f"{note_prefix}_{case['case_id']}",
+            )
+        ]
+        print(
+            f'已扫描 results/{project_name}：跳过 {before_count - len(selected_cases)} 个已完成 case，'
+            f'剩余 {len(selected_cases)} 个。'
+        )
     if not selected_cases:
+        if args.skip_completed:
+            print('所有选定 case 均已有结果，无需继续生成。')
+            return
         raise ValueError('筛选后没有可运行的 case')
 
     if args.build_first:
@@ -198,57 +393,101 @@ def main() -> None:
     if not args.dry_run:
         logs_dir.mkdir(parents=True, exist_ok=True)
 
-    print(f'将运行 {len(selected_cases)} 组 case，输出目录根路径: {output_root}')
-    for index, case in enumerate(selected_cases, start=1):
-        case_id = str(case['case_id'])
-        profile_dir = output_root / case_id
-        if not profile_dir.exists():
-            raise FileNotFoundError(f'未找到 case 参数目录: {profile_dir}，可先加 --build-first')
+    print(
+        f'将运行 {len(selected_cases)} 组 case，workers={args.workers}，'
+        f'threads_per_worker={args.threads_per_worker}，输出目录根路径: {output_root}'
+    )
 
-        command = build_case_command(
-            python_exe=args.python_exe,
-            workspace_root=workspace_root,
-            common=common,
-            profile_dir=profile_dir,
-            case_id=case_id,
-            manifest_name=manifest_name,
-            case_args=case.get('case_args', {}) or {},
-            extra_args=args.extra_args,
+    def report(entry: dict[str, Any]) -> None:
+        completed = len(log_entries)
+        print(
+            f"[{completed}/{len(selected_cases)}] {entry['case_id']} -> "
+            f"{entry['status']}, elapsed={entry['elapsed_s']:.3f}s"
         )
-        command_str = subprocess.list2cmdline(command)
-        print(f'[{index}/{len(selected_cases)}] {case_id}')
-        print('  ' + command_str)
+        if entry['stdout_log']:
+            print(f"     stdout: {entry['stdout_log']}")
+        if entry['stderr_log']:
+            print(f"     stderr: {entry['stderr_log']}")
 
-        case_started = time.perf_counter()
-        status = 'dry-run'
-        return_code = None
-        stdout_log = None
-        stderr_log = None
-        if not args.dry_run:
-            stdout_log = logs_dir / f'{case_id}.out.log'
-            stderr_log = logs_dir / f'{case_id}.err.log'
-            return_code = run_with_live_logs(command, workspace_root, stdout_log, stderr_log)
-            status = 'success' if return_code == 0 else 'failed'
-        elapsed = round(time.perf_counter() - case_started, 3)
-        print(f'  -> {status}, elapsed={elapsed:.3f}s')
-        if stdout_log is not None:
-            print(f'     stdout: {stdout_log}')
-        if stderr_log is not None:
-            print(f'     stderr: {stderr_log}')
+    common_kwargs = {
+        'python_exe': args.python_exe,
+        'workspace_root': workspace_root,
+        'output_root': output_root,
+        'logs_dir': logs_dir,
+        'common': common,
+        'manifest_name': manifest_name,
+        'extra_args': args.extra_args,
+        'analyze_after_case': args.analyze_after_case,
+        'dry_run': args.dry_run,
+        'threads_per_worker': args.threads_per_worker,
+    }
 
-        log_entries.append({
-            'case_id': case_id,
-            'profile_dir': str(profile_dir),
-            'command': command,
-            'status': status,
-            'return_code': return_code,
-            'elapsed_s': elapsed,
-            'stdout_log': str(stdout_log) if stdout_log is not None else None,
-            'stderr_log': str(stderr_log) if stderr_log is not None else None,
-        })
+    if args.workers == 1:
+        for index, case in enumerate(selected_cases, start=1):
+            print(f"[启动 {index}/{len(selected_cases)}] {case['case_id']}")
+            entry = execute_case(
+                case_index=index,
+                case=case,
+                stream_logs=True,
+                **common_kwargs,
+            )
+            log_entries.append(entry)
+            report(entry)
+            if entry['status'] not in {'success', 'dry-run'} and args.stop_on_error:
+                break
+    else:
+        next_case = iter(enumerate(selected_cases, start=1))
+        stop_scheduling = False
+        with ThreadPoolExecutor(max_workers=args.workers) as executor:
+            pending = {}
 
-        if status == 'failed' and args.stop_on_error:
-            break
+            def submit_next() -> bool:
+                try:
+                    index, case = next(next_case)
+                except StopIteration:
+                    return False
+                print(f"[启动 {index}/{len(selected_cases)}] {case['case_id']}")
+                future = executor.submit(
+                    execute_case,
+                    case_index=index,
+                    case=case,
+                    stream_logs=False,
+                    **common_kwargs,
+                )
+                pending[future] = (index, str(case['case_id']))
+                return True
+
+            for _ in range(min(args.workers, len(selected_cases))):
+                submit_next()
+
+            while pending:
+                done, _ = wait(pending, return_when=FIRST_COMPLETED)
+                for future in done:
+                    index, case_id = pending.pop(future)
+                    try:
+                        entry = future.result()
+                    except Exception as exc:
+                        entry = {
+                            'case_index': index,
+                            'case_id': case_id,
+                            'profile_dir': None,
+                            'command': None,
+                            'status': 'controller_failed',
+                            'return_code': None,
+                            'elapsed_s': 0.0,
+                            'stdout_log': None,
+                            'stderr_log': None,
+                            'analysis_log': None,
+                            'error': repr(exc),
+                        }
+                    log_entries.append(entry)
+                    report(entry)
+                    if entry['status'] not in {'success', 'dry-run'} and args.stop_on_error:
+                        stop_scheduling = True
+                while not stop_scheduling and len(pending) < args.workers and submit_next():
+                    pass
+
+    log_entries.sort(key=lambda item: int(item.get('case_index', 0)))
 
     summary = {
         'manifest': str(manifest_path),
@@ -258,9 +497,12 @@ def main() -> None:
         'run_finished_at': datetime.now().isoformat(timespec='seconds'),
         'dry_run': args.dry_run,
         'build_first': args.build_first,
+        'analyze_after_case': args.analyze_after_case,
+        'workers': args.workers,
+        'threads_per_worker': args.threads_per_worker,
         'total_cases': len(selected_cases),
         'success_cases': sum(1 for item in log_entries if item['status'] == 'success'),
-        'failed_cases': sum(1 for item in log_entries if item['status'] == 'failed'),
+        'failed_cases': sum(1 for item in log_entries if item['status'] not in {'success', 'dry-run'}),
         'entries': log_entries,
     }
     log_name = f"sweep_run_{run_started_at.strftime('%Y%m%d_%H%M%S')}.yaml"

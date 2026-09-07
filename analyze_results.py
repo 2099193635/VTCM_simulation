@@ -1184,9 +1184,9 @@ def run_all_analyses(
 if __name__ == "__main__":
     # Optional manual targets.
     # target_run_folder can be either a folder name under results/ or an absolute path.
-    target_run_folder = "results\\long_distance\\高速客车-外部导入-vehicle-normal-10km_moving_window-20260629_133910"
+    target_run_folder = "results\\long_distance\\高速客车-外部导入-vehicle-normal-10km_moving_window-20260717_145756"
     # target_file has highest priority. Leave empty to use the latest results/*/files/*.npz.
-    target_file = "results\\long_distance\\高速客车-外部导入-vehicle-normal-10km_moving_window-20260629_133910\\files\\simulation_result.npz"
+    target_file = "results\\long_distance\\高速客车-外部导入-vehicle-normal-10km_moving_window-20260717_145756\\files\\simulation_result.npz"
 
     # Mileage range for core response plots. Use None for the whole range.
     plot_mileage_start = None

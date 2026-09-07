@@ -83,7 +83,7 @@ class DynamicSolver:
         return bool(value)
 
     def __init__(self, topology, integration_params, switch_lock_veh_non_z, switch_lock_axlebox,
-                 switch_lock_substructure, sim_switches=None):
+                 switch_lock_substructure, sim_switches=None, switch_prescribe_wheel_spin='On'):
         """
         初始化动态求解器
         :param topology: 系统拓扑对象
@@ -101,6 +101,7 @@ class DynamicSolver:
         self.switch_lock_veh_non_z = self._as_bool(switch_lock_veh_non_z)
         self.switch_lock_axlebox = self._as_bool(switch_lock_axlebox)
         self.switch_lock_substructure = self._as_bool(switch_lock_substructure)
+        self.switch_prescribe_wheel_spin = self._as_bool(switch_prescribe_wheel_spin)
 
         # 锁定掩码
         self._build_freedom_locker()
@@ -278,6 +279,8 @@ class DynamicSolver:
         # 未被锁定的 Spin DOF 才赋初值
         _spin_unlocked = _spin_global[~self.lock_mask[_spin_global]]
         V[0, _spin_unlocked] = omg
+        if self.switch_prescribe_wheel_spin:
+            print(" -> [wheel spin] Prescribing nominal wheelset spin from vehicle speed.")
         print(f" -> [初始条件] 轮对名义自旋速度已设为 omg = {omg:.4f} rad/s (Vc={vc:.2f} m/s, R={self.params.omega and vc/omg:.4f} m)")
 
         # 解包激扰矩阵 (4个轮对，长度为 Nt)
@@ -338,6 +341,13 @@ class DynamicSolver:
 
             X[row, self.lock_mask] = 0.0
             V[row, self.lock_mask] = 0.0
+
+            # Longitudinal vehicle speed is prescribed, so wheel spin must use
+            # the matching kinematic constraint rather than free torque drift.
+            if self.switch_prescribe_wheel_spin:
+                X[row, _spin_unlocked] = omg * (i * dt)
+                V[row, _spin_unlocked] = omg
+                A[row, _spin_unlocked] = 0.0
 
             # ==========================================
             # STEP 2: 状态切片提取 (映射给各子结构)
@@ -473,6 +483,8 @@ class DynamicSolver:
             A[row, :] = sys_dynamics.compute_acceleration(GF_SYSTEM)
             # 自由度锁定
             A[row, self.lock_mask] = 0.0
+            if self.switch_prescribe_wheel_spin:
+                A[row, _spin_unlocked] = 0.0
             # ==========================================
             # STEP 8: 监视数据与结果记录 (SPY)
             # ==========================================

@@ -1,8 +1,9 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
+import h5py
 import numpy as np
 
 
@@ -111,6 +112,57 @@ class JointInverseNPZDataset:
 			sample["meta_json"] = self.meta_json[idx]
 		return sample
 
+
+class JointInverseHDF5Dataset:
+    """Lazy reader for component-wise joint inverse HDF5 datasets."""
+
+    def __init__(
+        self,
+        hdf5_path: str,
+        split: str = "train",
+        obs_channels: Sequence[int] | None = None,
+    ) -> None:
+        if split not in {"train", "val", "test"}:
+            raise ValueError(f"Unsupported split: {split}")
+        self.hdf5_path = str(hdf5_path)
+        self.split = split
+        self.obs_channels = None if obs_channels is None else np.asarray(obs_channels, dtype=np.int64)
+        self._file = h5py.File(self.hdf5_path, "r")
+        self._group = self._file[split]
+
+    def __len__(self) -> int:
+        return int(self._group["obs"].shape[0])
+
+    def __getitem__(self, idx: int) -> Dict[str, Any]:
+        obs = np.asarray(self._group["obs"][idx], dtype=np.float32)
+        if self.obs_channels is not None:
+            obs = obs[:, self.obs_channels]
+        return {
+            "obs_in": _to_tensor_or_array(obs),
+            "geom_tgt": _to_tensor_or_array(self._group["geometry_abs"][idx]),
+            "component_eta_tgt": _to_tensor_or_array(self._group["component_eta"][idx]),
+            "component_log_eta_tgt": _to_tensor_or_array(self._group["component_log_eta"][idx]),
+            "void_gap_tgt": _to_tensor_or_array(self._group["void_gap_m"][idx]),
+            "void_active_tgt": _to_tensor_or_array(self._group["void_active"][idx]),
+            "support_eta_tgt": _to_tensor_or_array(self._group["support_eta"][idx]),
+            "mask": _to_tensor_or_array(self._group["valid_mask"][idx]),
+            "context": _to_tensor_or_array(self._group["context"][idx]),
+            "sample_weight": np.float32(self._group["sample_weight"][idx]),
+            "run_id": self._group["run_id"].asstr()[idx],
+        }
+
+    @property
+    def attrs(self) -> Dict[str, Any]:
+        return dict(self._file.attrs)
+
+    def close(self) -> None:
+        if getattr(self, "_file", None) is not None:
+            self._file.close()
+            self._file = None
+            self._group = None
+
+    def __del__(self) -> None:
+        self.close()
 
 def build_dataloader(
 	records: Sequence[Dict[str, np.ndarray]],

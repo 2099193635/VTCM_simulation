@@ -1,4 +1,4 @@
-import unittest
+﻿import unittest
 import tempfile
 from pathlib import Path
 from types import SimpleNamespace
@@ -164,6 +164,27 @@ class StructureDefectTests(unittest.TestCase):
             self.assertTrue(np.any(dataset['stiffness_irregularity'] < 1.0))
 
 
+    def test_component_spatial_labels_cover_all_defect_types(self):
+        ip = SimpleNamespace(S0_mileage=1000.0, Nsub=10, Lkj=0.5, Cord_fastener=np.linspace(0.0, 5.0, 11))
+        records = StructureDefectManager._parse_records([
+            {'type': 'fastener_failure', 'start_m': 0.5, 'count': 2, 'side': 'left', 'eta_k': 0.5},
+            {'type': 'fastener_failure', 'start_m': 1.0, 'count': 1, 'side': 'left', 'eta_k': 0.5},
+            {'type': 'sleeper_void', 'start_m': 1.5, 'count': 2, 'side': 'right', 'delta_gap_mm': 2.0},
+            {'type': 'sleeper_void', 'start_m': 2.0, 'count': 1, 'side': 'right', 'delta_gap_mm': 3.0},
+            {'type': 'ballast_condition', 'start_m': 2.5, 'count': 2, 'side': 'both', 'eta_k': 0.2},
+            {'type': 'subgrade_condition', 'start_m': 3.5, 'count': 2, 'side': 'both', 'eta_k': 0.4},
+        ], ip)
+        manager = StructureDefectManager(ip, {}, records, enabled=True)
+        positions = 1000.0 + np.arange(10) * 0.5
+
+        labels = manager.spatial_labels(positions)
+
+        np.testing.assert_allclose(labels['fastener_eta_L'][1:3], [0.5, 0.25])
+        np.testing.assert_allclose(labels['fastener_eta_R'], 1.0)
+        np.testing.assert_allclose(labels['void_gap_R_m'][3:5], [0.002, 0.003])
+        self.assertTrue(np.all(labels['void_active_R'][3:5]))
+        np.testing.assert_allclose(labels['ballast_eta_L'][5:7], 0.2)
+        np.testing.assert_allclose(labels['subgrade_eta_R'][7:9], 0.4)
     def test_subgrade_condition_maps_to_kfv_cfv_only(self):
         ip = SimpleNamespace(S0_mileage=1000.0, Nsub=2, Lkj=0.5, Cord_fastener=np.array([0.0, 0.5, 1.0]))
         records = StructureDefectManager._parse_records([
